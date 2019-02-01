@@ -127,6 +127,13 @@ declare interface IGame {
     sleep(milliseconds: number): Promise<void>;
 
     /**
+     * Returns the chance you have of successfully hacking the specified server. This returned value is in decimal form, not percentage.
+     * @param host IP or hostname of target server
+     * @returns The chance you have of successfully hacking the target server
+     */
+    hackChance(host: string): number;
+
+    /**
      * Returns the percentage of the specified server’s money you will steal with a single hack. This value is returned in percentage form, not decimal (Netscript functions typically return in decimal form, but not this one).
      * @param host IP or hostname of target server
      * @returns The percentage of money you will steal from the target server with a single hack

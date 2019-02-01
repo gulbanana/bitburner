@@ -9,22 +9,24 @@ export async function main(ns) {
     for (let worker of servers.map()) {
         let root = worker.name;
 
-        log.info('----- SERVER: ' + root + ' -----');
-    
-        var sec = ns.getServerSecurityLevel(root);
-        var secBase = ns.getServerBaseSecurityLevel(root);
-        log.info('Security level: ' + sec + ' (' + secBase + ' base)');
+        let hackLevel = ns.getServerRequiredHackingLevel(root)
+        if (hackLevel <= ns.getHackingLevel()) {
+            log.info('----- SERVER: ' + root + ' -----');
+            
+            let hackChance = ns.hackChance(root);        
+            let hackRate = ns.hackAnalyzePercent(root);
+            log.info(`Requires Hacking ${hackLevel}; chance ${Math.floor(hackChance*100)/100}%, per-hack ${Math.floor(hackRate*100)/100}%`);
+            
+            var moneyAvailable = ns.getServerMoneyAvailable(root);
+            var maxMoney = ns.getServerMaxMoney(root);
+            var growthRate = ns.getServerGrowth(root);
+            log.info(`Money: \$${Math.floor(moneyAvailable)}/\$${maxMoney} (${Math.ceil(moneyAvailable / maxMoney * 100)}%); growth param ${growthRate}`);
         
-        var moneyAvailable = ns.getServerMoneyAvailable(root);
-        var maxMoney = ns.getServerMaxMoney(root);
-        log.info('Money: $' + Math.floor(moneyAvailable) + '/$' + maxMoney + ' (' + Math.ceil(moneyAvailable / maxMoney * 100) + '%)');
-        
-        var growthRate = ns.getServerGrowth(root);
-        log.info('Growth param: ' + growthRate);
-        
-        var hackRate = ns.hackAnalyzePercent(root);
-        log.info('Per-hack: ' + Math.floor(hackRate*100)/100 + '%');
+            var sec = ns.getServerSecurityLevel(root);
+            var secBase = ns.getServerBaseSecurityLevel(root);
+            log.info('Security level: ' + sec + ' (' + secBase + ' base)');
 
-        log.info('');
+            log.info('');
+        }
     }
 }

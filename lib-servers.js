@@ -1,6 +1,6 @@
 /// @ts-check
 
-class Server {
+export class Server {
     /**
      * @param {string} [name]
      * @param {number} [ram]
