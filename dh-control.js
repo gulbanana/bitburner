@@ -99,7 +99,7 @@ export async function main(ns) {
 
     var targetMoney = ns.getServerMoneyAvailable(target);
     var targetMoneyMax = ns.getServerMaxMoney(target);
-    var targetMoneyGoal = targetMoneyMax * (ns.args.length < 2 ? 0.5 : ns.args[1]);
+    var targetMoneyGoal = targetMoneyMax * (ns.args.length < 2 ? 0.25 : ns.args[1]);
     log.info("goal: available money >= $" + Math.floor(targetMoneyGoal));
 
     var targetTimeGrow = ns.getGrowTime(target);
