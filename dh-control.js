@@ -37,11 +37,25 @@ export async function main(ns) {
     /**
      * @param {string} job
      */
-    function findLeastImportant(job) {
+    function findSmallest(job) {
         /** @type {servers.Server} */
         let worker = null;
         for (let w of workerMap) {
             if (w.job === job && (worker == null || w.ram < worker.ram)) {
+                worker = w;
+            }
+        }
+        return worker;
+    }
+
+    /**
+     * @param {string} job
+     */
+    function findLargest(job) {
+        /** @type {servers.Server} */
+        let worker = null;
+        for (let w of workerMap) {
+            if (w.job === job && (worker == null || w.ram > worker.ram)) {
                 worker = w;
             }
         }
@@ -64,11 +78,12 @@ export async function main(ns) {
     /**
      * @param {string} oldJob
      * @param {string} newJob
+     * @param {boolean} [fast=false]
      */
-    async function swapJob(oldJob, newJob) {
-        let least = findLeastImportant(oldJob);
-        if (least != null) { 
-            await setJob(least, newJob);
+    async function swapJob(oldJob, newJob, fast) {
+        let victim = fast ? findLargest(oldJob) : findSmallest(oldJob);
+        if (victim != null) { 
+            await setJob(victim, newJob);
         } else {
             log.error(`trying to assign from ${oldJob} -> ${newJob} but no workers are available`);
         }
@@ -187,7 +202,7 @@ export async function main(ns) {
         
         if (targetMoney < targetMoneyGoal && !moneyIncreasing) {
             if (findAll('hack').length > 0) {
-                await swapJob('hack', 'grow');
+                await swapJob('hack', 'grow', true);
             }
         } else if (targetMoney > targetMoneyGoal && !moneyDecreasing) {
             if (findAll('grow').length > 0) {
