@@ -7,16 +7,23 @@ export async function main(ns) {
     var log = new Logger(ns, { termInfo: true });
 
     var jobs = ['hack', 'grow', 'weaken'];
+    var counts = { hack: 0, grow: 0, weaken: 0 };
+
     for (let worker of servers.all()) {
         if (worker.canWork()) {
             for (var jID in jobs) {
                 var job = jobs[jID];
-                if (ns.scriptRunning('dh-worker-' + job + '.script', worker.name)) {
+                if (ns.scriptRunning('dh-worker-' + job + '.js', worker.name)) {
                     worker.job = job;
+                    counts[job] += worker.ram;
                 }
             }
 
-            log.info(worker.print());
+            log.debug(worker.print());
         }
     }
+
+    log.info(`total hack(): ${counts.hack}GB`);
+    log.info(`total grow(): ${counts.grow}GB`);
+    log.info(`total weaken(): ${counts.weaken}GB`);
 }

@@ -10,7 +10,7 @@ export class Logger {
         this.ns = ns;
         this.showError = options.showError || true;
         this.showInfo = options.showInfo || true;
-        this.showDebug = options.showDebug || false;
+        this.showDebug = options.showDebug || true;
         this.termError = options.termError || true;
         this.termInfo = options.termInfo || false;
         this.termDebug = options.termDebug || false;

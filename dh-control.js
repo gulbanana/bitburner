@@ -4,7 +4,9 @@ import * as servers from './lib-servers.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    let log = new Logger(ns, { showInfo: true, showDebug: true, termInfo: true, termDebug: true });
+    /** @type {servers.Server[]} */
+    let workerMap = [];
+    let log = new Logger(ns, { showInfo: true, showDebug: false, termInfo: false, termDebug: false });
 
     /** 
      * @param {servers.Server} worker
@@ -109,8 +111,6 @@ export async function main(ns) {
 
     log.info('scan workers...');
     let jobs = ['hack', 'grow', 'weaken'];
-    /** @type {servers.Server[]} */
-    let workerMap = [];
 
     for (let worker of servers.all()) {
         if (worker.canWork()) {
@@ -143,14 +143,33 @@ export async function main(ns) {
     }
 
     log.info('monitor...');
+    targetMoney = ns.getServerMoneyAvailable(target);
+    let moneyReadings = [targetMoney, targetMoney, targetMoney];
+    let targetSec = ns.getServerSecurityLevel(target);
+    let secReadings = [targetSec, targetSec, targetSec];
+    
     while (true) {
-        var targetSec = ns.getServerSecurityLevel(target);
         targetMoney = ns.getServerMoneyAvailable(target);
+        targetSec = ns.getServerSecurityLevel(target);
+
+        moneyReadings[0] = moneyReadings[1];
+        moneyReadings[1] = moneyReadings[2];
+        moneyReadings[2] = targetMoney;
+
+        secReadings[0] = secReadings[1];
+        secReadings[1] = secReadings[2];
+        secReadings[2] = targetSec;
         
-        log.info('status: sec level ' + Math.floor(targetSecGoal) + ' < ' + Math.floor(targetSec) + ' < ' + Math.floor(targetSecBase));
-        log.info('status: money $' + Math.floor(targetMoneyGoal) + ' < $' + Math.floor(targetMoney) + ' < $' + Math.floor(targetMoneyGoal*2));
-        
-        if (targetSec > targetSecBase) {
+        let moneyIncreasing = moneyReadings[2] >= moneyReadings[1] && moneyReadings[1] >= moneyReadings[0];
+        let secDecreasing = secReadings[2] <= secReadings[1] && secReadings[1] <= secReadings[0];
+
+        log.info(`status: money \$${Math.floor(targetMoneyGoal)} < \$${Math.floor(targetMoney)} < \$${Math.floor(targetMoneyGoal*2)}; increasing: ${moneyIncreasing}`);
+        log.info(`status: sec level ${Math.floor(targetSecGoal)} < ${Math.floor(targetSec)} < ${Math.floor(targetSecBase)}; decreasing: ${secDecreasing}`);
+
+        let needGrowth = targetMoney < targetMoneyGoal;
+        let needWeaken = targetSec > targetSecGoal && !secDecreasing;
+
+        if (needWeaken) {
             if (findAll('hack').length > 0) {
                 await swapJob('hack', 'weaken');
             } else {
@@ -160,9 +179,11 @@ export async function main(ns) {
             await swapJob('weaken', 'hack');
         }
         
-        if (targetMoney < targetMoneyGoal && findAll('hack').length > 0) {
-            await swapJob('hack', 'grow');
-        } else if (targetMoney > (targetMoneyGoal * 2)) {
+        if (needGrowth) {
+            if (findAll('hack').length > 0) {
+                await swapJob('hack', 'grow');
+            }
+        } else if (targetMoney > targetMoneyGoal) {
             await swapJob('grow', 'hack');
         }
         
