@@ -178,7 +178,7 @@ export async function main(ns) {
                 await swapJob('grow', 'weaken');
             }
         } else if (targetSec < targetSecGoal && !secIncreasing) {
-            if (targetMoney < targetMoneyGoal) {
+            if (targetMoney < targetMoneyGoal || moneyDecreasing) {
                 await swapJob('weaken', 'grow');
             } else {
                 await swapJob('weaken', 'hack');
