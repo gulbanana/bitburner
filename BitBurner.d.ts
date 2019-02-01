@@ -126,6 +126,13 @@ declare interface IGame {
      */
     sleep(milliseconds: number): Promise<void>;
 
+    /**
+     * Returns the percentage of the specified server’s money you will steal with a single hack. This value is returned in percentage form, not decimal (Netscript functions typically return in decimal form, but not this one).
+     * @param host IP or hostname of target server
+     * @returns The percentage of money you will steal from the target server with a single hack
+     */
+    hackAnalyzePercent(host: string): number;
+
     /** 
      * Prints a value or a variable to the script’s logs. 
      */
@@ -190,7 +197,15 @@ declare interface IGame {
     clear(file: string): void;
     clear(port: number): void;
     rm(file: string): boolean;
+    
+    /**
+     * Returns a boolean indicating whether any instance of the specified script is running on the target server, regardless of its arguments.
+     * This is different than the isRunning() function because it does not try to identify a specific instance of a running script by its arguments.
+     * @param script Filename of script to check. This is case-sensitive.
+     * @param hostname Hostname or IP of target server
+     */
     scriptRunning(script: string, hostname: string): boolean;
+    
     scriptKill(script: string, hostname: string): boolean;
     getScriptName(): string;
     getScriptRam(script: string, hostname?: string): number;
