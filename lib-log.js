@@ -8,14 +8,14 @@ export class Logger {
      */
     constructor(ns, options) {
         this.ns = ns;
-        this.showError = options.showError || true;
-        this.showInfo = options.showInfo || true;
-        this.showDebug = options.showDebug || true;
-        this.termError = options.termError || true;
-        this.termInfo = options.termInfo || false;
-        this.termDebug = options.termDebug || false;
+        this.showError = typeof options.showError !== 'undefined' ? options.showError : true;
+        this.showInfo = typeof options.showInfo !== 'undefined' ? options.showInfo : true;
+        this.showDebug = typeof options.showDebug !== 'undefined' ? options.showDebug : true;
+        this.termError = typeof options.termError !== 'undefined' ? options.termError : true;
+        this.termInfo = typeof options.termInfo !== 'undefined' ? options.termInfo : false;
+        this.termDebug = typeof options.termDebug !== 'undefined' ? options.termDebug : false;
 
-        if (options.disable || true) {
+        if (typeof options.disable !== 'undefined' ? options.disable : true) {
             ns.disableLog('ALL');
         }
     }

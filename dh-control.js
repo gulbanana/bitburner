@@ -160,31 +160,36 @@ export async function main(ns) {
         secReadings[1] = secReadings[2];
         secReadings[2] = targetSec;
         
+        let moneyDecreasing = moneyReadings[2] < moneyReadings[1] && moneyReadings[1] < moneyReadings[0];
         let moneyIncreasing = moneyReadings[2] >= moneyReadings[1] && moneyReadings[1] >= moneyReadings[0];
         let secDecreasing = secReadings[2] <= secReadings[1] && secReadings[1] <= secReadings[0];
+        let secIncreasing = secReadings[2] > secReadings[1] && secReadings[1] > secReadings[0];
 
-        log.info(`status: money \$${Math.floor(targetMoneyGoal)} < \$${Math.floor(targetMoney)} < \$${Math.floor(targetMoneyGoal*2)}; increasing: ${moneyIncreasing}`);
-        log.info(`status: sec level ${Math.floor(targetSecGoal)} < ${Math.floor(targetSec)} < ${Math.floor(targetSecBase)}; decreasing: ${secDecreasing}`);
+        log.info(`status: money \$${Math.floor(targetMoney)} / goal \$${Math.floor(targetMoneyGoal)}; ${moneyIncreasing ? 'increasing' : ''}${moneyDecreasing ? 'decreasing' : ''}`);
+        log.info(`status: sec level ${Math.floor(targetSec)} / goal ${Math.floor(targetSecGoal)}; ${secIncreasing ? 'increasing' : ''}${secDecreasing ? 'decreasing' : ''}`);
 
-        let needGrowth = targetMoney < targetMoneyGoal;
-        let needWeaken = targetSec > targetSecGoal && !secDecreasing;
-
-        if (needWeaken) {
+        if (targetSec > targetSecGoal && !secDecreasing) {
             if (findAll('hack').length > 0) {
                 await swapJob('hack', 'weaken');
             } else {
                 await swapJob('grow', 'weaken');
             }
-        } else if (targetSec < targetSecGoal) {
-            await swapJob('weaken', 'hack');
+        } else if (targetSec < targetSecGoal && !secIncreasing) {
+            if (targetMoney < targetMoneyGoal) {
+                await swapJob('weaken', 'grow');
+            } else {
+                await swapJob('weaken', 'hack');
+            }
         }
         
-        if (needGrowth) {
+        if (targetMoney < targetMoneyGoal && !moneyIncreasing) {
             if (findAll('hack').length > 0) {
                 await swapJob('hack', 'grow');
             }
-        } else if (targetMoney > targetMoneyGoal) {
-            await swapJob('grow', 'hack');
+        } else if (targetMoney > targetMoneyGoal && !moneyDecreasing) {
+            if (findAll('grow').length > 0) {
+                await swapJob('grow', 'hack');
+            }
         }
         
         await ns.sleep(30000);
