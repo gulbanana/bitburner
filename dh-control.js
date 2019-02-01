@@ -74,6 +74,9 @@ export async function main(ns) {
         }
     }
 
+    /**
+     * @param {servers.Server} worker
+     */
     function enrol(worker) {
         log.debug('enrolling ' + worker.name);
         
