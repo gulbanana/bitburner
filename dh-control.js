@@ -40,7 +40,7 @@ export async function main(ns) {
         let worker = null;
         for (let w of workerMap) {
             if (w.job === job && (worker == null || w.ram < worker.ram)) {
-                return w;
+                worker = w;
             }
         }
         return worker;
