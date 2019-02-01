@@ -166,6 +166,6 @@ export async function main(ns) {
             await swapJob('grow', 'hack');
         }
         
-        await ns.sleep(targetTimeGoal);
+        await ns.sleep(30000);
     }
 }
