@@ -134,7 +134,7 @@ export async function main(ns) {
         }
     }
 
-    log.info('assign idle workers...');
+    log.debug('assign idle workers...');
     for (let worker of workerMap) {
         if (worker.job === '') {
             if (!ns.hasRootAccess(worker.name)) {

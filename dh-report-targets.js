@@ -13,7 +13,7 @@ export async function main(ns) {
             let hackLevel = ns.getServerRequiredHackingLevel(worker.name)
             let hackChance = ns.hackChance(worker.name);        
             let hackRate = ns.hackAnalyzePercent(worker.name);
-            log.info(`Requires Hacking ${hackLevel}; chance ${Math.floor(hackChance*100)/100}%, per-hack ${Math.floor(hackRate*100)/100}%`);
+            log.info(`Requires Hacking ${hackLevel}; chance ${Math.floor(hackChance*100)}%, per-hack ${Math.floor(hackRate*100)/100}%`);
             
             var moneyAvailable = ns.getServerMoneyAvailable(worker.name);
             var maxMoney = ns.getServerMaxMoney(worker.name);

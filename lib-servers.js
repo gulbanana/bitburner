@@ -19,7 +19,7 @@ export class Server {
      * @param {IGame} ns
      */
     canWork(ns) {
-        return this.ram > 0 && this.canExec(ns);
+        return this.ram >= 2 && this.canExec(ns);
     }
 
     /**
