@@ -201,7 +201,41 @@ declare interface IGame {
     purchaseHacknetNode(): number | false;
     purchaseServer(hostname: string, ram: number): string;
     deleteServer(hostname: string): boolean;
+
+    /**
+     * Returns the cost to purchase a server with the specified amount of ram.
+     * @param ram Amount of RAM of a potential purchased server. Must be a power of 2 (2, 4, 8, 16, etc.). Maximum value of 1048576 (2^20)
+     */
+    getPurchasedServerCost(ram: number): number;
+
+    /**
+     * Purchase a server with the specified hostname and amount of RAM.
+     * The hostname argument can be any data type, but it will be converted to a string and have whitespace removed. Anything that resolves to an empty string will cause the function to fail. If there is already a server with the specified hostname, then the function will automatically append a number at the end of the hostname argument value until it finds a unique hostname. For example, if the script calls purchaseServer(“foo”, 4) but a server named “foo” already exists, the it will automatically change the hostname to “foo-0”. If there is already a server with the hostname “foo-0”, then it will change the hostname to “foo-1”, and so on.
+     * Note that there is a maximum limit to the amount of servers you can purchase.
+     * Returns the hostname of the newly purchased server as a string. If the function fails to purchase a server, then it will return an empty string. The function will fail if the arguments passed in are invalid, if the player does not have enough money to purchase the specified server, or if the player has exceeded the maximum amount of servers.
+     * @param hostname Hostname of the purchased server
+     * @param ram Amount of RAM of the purchased server. Must be a power of 2 (2, 4, 8, 16, etc.). Maximum value of 1048576 (2^20)
+     */
+    purchaseServer(hostname: string, ram: number): string;
+
+    /**
+     * Deletes one of your purchased servers, which is specified by its hostname.
+     * The hostname argument can be any data type, but it will be converted to a string. Whitespace is automatically removed from the string. This function will not delete a server that still has scripts running on it.
+     * Returns true if successful, and false otherwise.
+     * @param hostname Hostname of the server to delete
+     */
+    deleteServer(hostname: string): boolean;
+
+    /**
+     * Returns an array with either the hostnames or IPs of all of the servers you have purchased.
+     * @param useHostnames Specifies whether hostnames or IP addresses should be returned. If it’s true then hostnames will be returned, and if false then IPs will be returned. If this argument is omitted then it is true by default
+     */
     getPurchasedServers(useHostnames?: boolean): string[];
+
+    getPurchasedServerLimit(): number;
+
+    getPurchasedServerMaxRam(): number;
+
     write(file: string, data?: string, mode?: string): void;
     write(port: number, data?: string): void;
     read(file: string): string;

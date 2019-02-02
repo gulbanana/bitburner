@@ -26,7 +26,7 @@ export class Server {
      * @param {IGame} ns
      */
     canHack(ns) {
-        return this.name != 'home' && ns.getHackingLevel() >= ns.getServerRequiredHackingLevel(this.name) && this.canExec(ns);
+        return this.name != 'home' && !this.name.startsWith('bot') && ns.getHackingLevel() >= ns.getServerRequiredHackingLevel(this.name) && this.canExec(ns);
     }
 
     /**
@@ -113,4 +113,13 @@ export function map(ns) {
  */
 export function all(ns) {
     return bots(ns).concat(map(ns)).concat([new Server('home', 1536, 0, 'weaken')]);
+}
+
+export function botsIfAny(ns) {
+    let bs = bots(ns);
+    if (bs.length > 0) {
+        return bs;
+    } else {
+        return map(ns).concat([new Server('home', 1536, 0, 'weaken')]);
+    }
 }
