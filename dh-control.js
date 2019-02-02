@@ -20,7 +20,7 @@ export async function main(ns) {
         let threads = Math.floor(worker.ram / cost);
         log.info(`assigning ${worker.name} ${worker.job} -> ${job} x${threads}`);
         
-        if (ns.killall(worker.name)) {
+        if (stopJob(worker)) {
             log.debug('stopping old job');
             while (ns.getServerRam(worker.name)[1] > 0) { 
                 await ns.sleep(100);
@@ -35,27 +35,25 @@ export async function main(ns) {
     }
 
     /**
-     * @param {string} job
+     * @param {servers.Server} worker
      */
-    function findSmallest(job) {
-        /** @type {servers.Server} */
-        let worker = null;
-        for (let w of workerMap) {
-            if (w.job === job && (worker == null || w.ram < worker.ram)) {
-                worker = w;
-            }
+    function stopJob(worker) {
+        if (typeof worker.lock == 'string') {
+            return ns.scriptKill(`dh-worker-${worker.lock}.js`, worker.name);
+        } else {
+            return ns.killall(worker.name);
         }
-        return worker;
     }
 
     /**
      * @param {string} job
+     * @param {function(number, number): boolean} f
      */
-    function findLargest(job) {
+    function find(job, f) {
         /** @type {servers.Server} */
         let worker = null;
         for (let w of workerMap) {
-            if (w.job === job && (worker == null || w.ram > worker.ram)) {
+            if (typeof w.lock == 'undefined' && w.job === job && (worker == null || f(w.ram, worker.ram))) {
                 worker = w;
             }
         }
@@ -81,7 +79,7 @@ export async function main(ns) {
      * @param {boolean} [fast=false]
      */
     async function swapJob(oldJob, newJob, fast) {
-        let victim = fast ? findLargest(oldJob) : findSmallest(oldJob);
+        let victim = find(oldJob, fast ? (x, y) => x > y : (x, y) => x < y);
         if (victim != null) { 
             await setJob(victim, newJob);
         } else {
@@ -119,21 +117,20 @@ export async function main(ns) {
 
     var targetMoney = ns.getServerMoneyAvailable(target);
     var targetMoneyMax = ns.getServerMaxMoney(target);
-    var targetMoneyGoal = targetMoneyMax * (ns.args.length < 2 ? 0.25 : ns.args[1]);
+    var targetMoneyGoal = targetMoneyMax * (ns.args.length < 2 ? 0.5 : ns.args[1]);
     log.info("goal: available money >= $" + Math.floor(targetMoneyGoal));
 
-    var targetTimeGrow = ns.getGrowTime(target);
-    var targetTimeWeaken = ns.getWeakenTime(target);
-    var targetTimeGoal = Math.max(targetTimeGrow, targetTimeWeaken) * 1000;
-    log.info("goal: sleep " + Math.floor(targetTimeGoal) + "ms");
+    // not currently used, it seems more effective to respond rapidly in small increments
+    // var targetTimeGrow = ns.getGrowTime(target);
+    // var targetTimeWeaken = ns.getWeakenTime(target);
+    // var targetTimeGoal = Math.max(targetTimeGrow, targetTimeWeaken) * 1000; 
+    // log.info("goal: sleep " + Math.floor(targetTimeGoal) + "ms");
 
     log.info('scan workers...');
     let jobs = ['hack', 'grow', 'weaken'];
 
-    for (let worker of servers.all()) {
-        if (worker.canWork()) {
-            worker.job = '';
-            
+    for (let worker of servers.all(ns)) {
+        if (worker.canWork()) {            
             for (let job of jobs) {
                 if (ns.isRunning('dh-worker-' + job + '.js', worker.name, target)) {
                     worker.job = job;
@@ -152,7 +149,9 @@ export async function main(ns) {
                 enrol(worker);
             } 
             
-            if (targetMoney > targetMoneyGoal) {
+            if (typeof worker.lock == 'string') {
+                await setJob(worker, worker.lock);
+            } else if (targetMoney > targetMoneyGoal) {
                 await setJob(worker, 'hack');
             } else {
                 await setJob(worker, 'grow');
@@ -170,21 +169,23 @@ export async function main(ns) {
         targetMoney = ns.getServerMoneyAvailable(target);
         targetSec = ns.getServerSecurityLevel(target);
 
-        moneyReadings[0] = moneyReadings[1];
-        moneyReadings[1] = moneyReadings[2];
-        moneyReadings[2] = targetMoney;
-
         secReadings[0] = secReadings[1];
         secReadings[1] = secReadings[2];
         secReadings[2] = targetSec;
-        
-        let moneyDecreasing = moneyReadings[2] < moneyReadings[1] && moneyReadings[1] < moneyReadings[0];
-        let moneyIncreasing = moneyReadings[2] >= moneyReadings[1] && moneyReadings[1] >= moneyReadings[0];
-        let secDecreasing = secReadings[2] <= secReadings[1] && secReadings[1] <= secReadings[0];
+
+        let secDecreasing = secReadings[2] < secReadings[1] && secReadings[1] < secReadings[0];
         let secIncreasing = secReadings[2] > secReadings[1] && secReadings[1] > secReadings[0];
 
+        log.info(`status: security level ${Math.floor(targetSec)} / goal ${Math.floor(targetSecGoal)}; ${secIncreasing ? 'increasing' : ''}${secDecreasing ? 'decreasing' : ''}`);
+
+        moneyReadings[0] = moneyReadings[1];
+        moneyReadings[1] = moneyReadings[2];
+        moneyReadings[2] = targetMoney;
+        
+        let moneyDecreasing = moneyReadings[2] < moneyReadings[1] && moneyReadings[1] < moneyReadings[0];
+        let moneyIncreasing = moneyReadings[2] > moneyReadings[1] && moneyReadings[1] > moneyReadings[0];
+
         log.info(`status: money \$${Math.floor(targetMoney)} / goal \$${Math.floor(targetMoneyGoal)}; ${moneyIncreasing ? 'increasing' : ''}${moneyDecreasing ? 'decreasing' : ''}`);
-        log.info(`status: sec level ${Math.floor(targetSec)} / goal ${Math.floor(targetSecGoal)}; ${secIncreasing ? 'increasing' : ''}${secDecreasing ? 'decreasing' : ''}`);
 
         if (targetSec > targetSecGoal && !secDecreasing) {
             if (findAll('hack').length > 0) {

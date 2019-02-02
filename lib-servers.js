@@ -2,16 +2,17 @@
 
 export class Server {
     /**
-     * @param {string} [name]
-     * @param {number} [ram]
-     * @param {number} [ports]
-     * @param {string} [job='']
+     * @param {string} name
+     * @param {number} ram
+     * @param {number} ports
+     * @param {string} [lock='']
      */
-    constructor(name, ram, ports, job) {
+    constructor(name, ram, ports, lock) {
         this.name = name;
         this.ram = ram;
         this.ports = ports;
-        this.job = job || '';
+        this.lock = lock;
+        this.job = '';
     }
 
     canWork() {
@@ -28,7 +29,7 @@ export class Server {
 }
 
 /**
- * @param {IGame} [ns]
+ * @param {IGame} ns
  */
 export function bots(ns) {
     let all = [];
@@ -39,11 +40,10 @@ export function bots(ns) {
     return all;
 }
 
-
 // notes: traversal past depth 10 is via defcomm and then zb-def
 export function map() {
     return [
-        new Server('home', 1024, 0),
+        new Server('home', 1536, 0, 'weaken'),
         new Server('foodnstuff', 16, 0), 
         new Server('nectar-net', 16, 0), 
                 new Server('neo-net', 32, 1), 
@@ -116,7 +116,7 @@ export function map() {
 }
 
 /**
- * @param {IGame} [ns]
+ * @param {IGame} ns
  */
 export function all(ns) {
     return bots(ns).concat(map());

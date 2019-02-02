@@ -9,7 +9,7 @@ export async function main(ns) {
     var jobs = ['hack', 'grow', 'weaken'];
     var counts = { hack: 0, grow: 0, weaken: 0 };
 
-    for (let worker of servers.all()) {
+    for (let worker of servers.all(ns)) {
         if (worker.canWork()) {
             for (var jID in jobs) {
                 var job = jobs[jID];
