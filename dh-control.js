@@ -22,7 +22,7 @@ export async function main(ns) {
         
         if (stopJob(worker)) {
             log.debug('stopping old job');
-            while (ns.getServerRam(worker.name)[1] > 0) { 
+            while (jobRunning(worker)) { 
                 await ns.sleep(100);
             }
             log.debug('old job stopped');
@@ -42,6 +42,17 @@ export async function main(ns) {
             return ns.scriptKill(`dh-worker-${worker.lock}.js`, worker.name);
         } else {
             return ns.killall(worker.name);
+        }
+    }
+
+    /**
+     * @param {servers.Server} worker
+     */
+    function jobRunning(worker) {
+        if (typeof worker.lock == 'string') {
+            return ns.scriptRunning(`dh-worker-${worker.lock}.js`, worker.name);
+        } else {
+            return ns.getServerRam(worker.name)[1] > 0;
         }
     }
 
@@ -66,7 +77,7 @@ export async function main(ns) {
     function findAll(job) {
         let workers = [];
         for (let worker of workerMap) {
-            if (worker.job === job) {
+            if (typeof worker.lock == 'undefined' && worker.job === job) {
                 workers.push(worker);
             }
         }
@@ -87,28 +98,9 @@ export async function main(ns) {
         }
     }
 
-    /**
-     * @param {servers.Server} worker
-     */
-    function enrol(worker) {
-        log.debug('enrolling ' + worker.name);
-        
-        ns.brutessh(worker.name);
-        ns.ftpcrack(worker.name);
-        ns.relaysmtp(worker.name);
-        ns.httpworm(worker.name);
-        ns.sqlinject(worker.name);
-        ns.nuke(worker.name);
-        
-        log.debug('...got root');
-    }
-
     log.info('scan target...');
     if (ns.args.length < 1) log.error('hostname required');
     var target = ns.args[0];
-    if (!ns.hasRootAccess(target)) {
-        enrol(target);
-    }
 
     var targetSecMin = ns.getServerMinSecurityLevel(target);
     var targetSecBase = ns.getServerBaseSecurityLevel(target);
@@ -130,7 +122,7 @@ export async function main(ns) {
     let jobs = ['hack', 'grow', 'weaken'];
 
     for (let worker of servers.all(ns)) {
-        if (worker.canWork()) {            
+        if (worker.canWork(ns)) {            
             for (let job of jobs) {
                 if (ns.isRunning('dh-worker-' + job + '.js', worker.name, target)) {
                     worker.job = job;
@@ -146,7 +138,9 @@ export async function main(ns) {
     for (let worker of workerMap) {
         if (worker.job === '') {
             if (!ns.hasRootAccess(worker.name)) {
-                enrol(worker);
+                log.debug('enrolling ' + worker.name);
+                worker.enrol(ns);                
+                log.debug('...got root');
             } 
             
             if (typeof worker.lock == 'string') {
@@ -194,10 +188,12 @@ export async function main(ns) {
                 await swapJob('grow', 'weaken');
             }
         } else if (targetSec < targetSecGoal && !secIncreasing) {
-            if (targetMoney < targetMoneyGoal || moneyDecreasing) {
-                await swapJob('weaken', 'grow');
-            } else {
-                await swapJob('weaken', 'hack');
+            if (findAll('weaken').length > 0) {
+                if (targetMoney < targetMoneyGoal || moneyDecreasing) {
+                    await swapJob('weaken', 'grow');
+                } else {
+                    await swapJob('weaken', 'hack');
+                }
             }
         }
         

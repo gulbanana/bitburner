@@ -4,13 +4,13 @@ import * as servers from './lib-servers.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    var log = new Logger(ns, { termInfo: true });
+    var log = new Logger(ns, { termInfo: true, termDebug: ns.args.includes('debug') });
 
     var jobs = ['hack', 'grow', 'weaken'];
     var counts = { hack: 0, grow: 0, weaken: 0 };
 
     for (let worker of servers.all(ns)) {
-        if (worker.canWork()) {
+        if (worker.canWork(ns)) {
             for (var jID in jobs) {
                 var job = jobs[jID];
                 if (ns.scriptRunning('dh-worker-' + job + '.js', worker.name)) {

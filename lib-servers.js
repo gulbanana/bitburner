@@ -15,8 +15,35 @@ export class Server {
         this.job = '';
     }
 
-    canWork() {
-        return this.ram > 0;
+    /**
+     * @param {IGame} ns
+     */
+    canWork(ns) {
+        return this.ram > 0 && this.canExec(ns);
+    }
+
+    /**
+     * @param {IGame} ns
+     */
+    canHack(ns) {
+        return this.name != 'home' && ns.getHackingLevel() >= ns.getServerRequiredHackingLevel(this.name) && this.canExec(ns);
+    }
+
+    /**
+     * @param {IGame} ns
+     */
+    canExec(ns) {
+        return ns.hasRootAccess(this.name) || this.ports <= hacks(ns).length;
+    }
+
+    /**
+     * @param {IGame} ns
+     */
+    enrol(ns) {
+        for (var hack of hacks(ns)) {
+            hack(this.name);
+        }
+        ns.nuke(this.name);
     }
 
     print() {
@@ -26,6 +53,19 @@ export class Server {
             return `${this.name} (${this.ram}GB)`;
         }
     }
+}
+
+/**
+ * @param {IGame} ns
+ */
+export function hacks(ns) {
+    let hacks = [];
+    if (ns.fileExists('BruteSSH.exe', 'home')) hacks.push(ns.brutessh);
+    if (ns.fileExists('FTPCrack.exe', 'home')) hacks.push(ns.ftpcrack);
+    if (ns.fileExists('relaySMTP.exe', 'home')) hacks.push(ns.relaysmtp);
+    if (ns.fileExists('HTTPWorm.exe', 'home')) hacks.push(ns.httpworm);
+    if (ns.fileExists('SQLInject.exe', 'home')) hacks.push(ns.sqlinject);
+    return hacks;
 }
 
 /**
