@@ -5,12 +5,13 @@ export class Server {
      * @param {string} [name]
      * @param {number} [ram]
      * @param {number} [ports]
+     * @param {string} [job='']
      */
-    constructor(name, ram, ports) {
+    constructor(name, ram, ports, job) {
         this.name = name;
         this.ram = ram;
         this.ports = ports;
-        this.job = '';
+        this.job = job || '';
     }
 
     canWork() {
@@ -26,17 +27,23 @@ export class Server {
     }
 }
 
-export function bots() {
-    var all = [];
-    for (var i = 1; i <= 20; i++) {
-        all.push(new Server('bot'+i, 4, 0));
+/**
+ * @param {IGame} [ns]
+ */
+export function bots(ns) {
+    let all = [];
+    for (let host of ns.getPurchasedServers(true)) {
+        let ram = ns.getServerRam(host);
+        all.push(new Server(host, ram[0], 0));
     }
     return all;
 }
 
+
 // notes: traversal past depth 10 is via defcomm and then zb-def
 export function map() {
     return [
+        new Server('home', 1024, 0),
         new Server('foodnstuff', 16, 0), 
         new Server('nectar-net', 16, 0), 
                 new Server('neo-net', 32, 1), 
@@ -108,6 +115,9 @@ export function map() {
     ];
 }
 
-export function all() {
-    return bots().concat(map());
+/**
+ * @param {IGame} [ns]
+ */
+export function all(ns) {
+    return bots(ns).concat(map());
 }
