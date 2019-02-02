@@ -187,7 +187,13 @@ declare interface IGame {
     getServerMinSecurityLevel(hostname: string): number;
     getServerRequiredHackingLevel(hostname: string): number;
     getServerNumPortsRequired(hostname: string): number;
+    
+    /**
+     * Returns an array with two elements that gives information about a server’s memory (RAM). The first element in the array is the amount of RAM that the server has total (in GB). The second element in the array is the amount of RAM that is currently being used on the server (in GB).
+     * @param hostname Hostname or IP of target server
+     */
     getServerRam(hostname: string): [ number, number ];
+    
     serverExists(hostname: string): boolean;
     fileExists(filename: string, hostname?: string): boolean;
     isRunning(script: string, hostname: string, ...args: any[]): boolean;

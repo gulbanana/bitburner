@@ -6,7 +6,7 @@ import * as servers from './lib-servers.js';
 export async function main(ns) {
     var log = new Logger(ns, { termInfo: true });
     
-    for (let worker of servers.map()) {
+    for (let worker of servers.map(ns)) {
         if (worker.canHack(ns)) {
             log.info('----- SERVER: ' + worker.name + ' -----');
         
