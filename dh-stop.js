@@ -1,4 +1,3 @@
-// @ts-check
 import { Logger } from './lib-log.js';
 import * as servers from './lib-servers.js';
 

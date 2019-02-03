@@ -1,4 +1,3 @@
-/// @ts-check
 /// <reference path="BitBurner.d.ts" />
 export class Logger {
     /**

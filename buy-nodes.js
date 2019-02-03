@@ -1,4 +1,3 @@
-// @ts-check
 import { Logger } from './lib-log.js';
 
 /** @param {IGame} ns */

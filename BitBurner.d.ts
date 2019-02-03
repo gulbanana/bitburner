@@ -127,11 +127,30 @@ declare interface IGame {
     sleep(milliseconds: number): Promise<void>;
 
     /**
+     * This function returns the number of script threads you need when running the hack() command to steal the specified amount of money from the target server.
+     * If hackAmount is less than zero or greater than the amount of money available on the server, then this function returns -1.
+     * @param host IP or hostname of target server
+     * @param hackAmount Amount of money you want to hack from the server
+     * @returns The number of threads needed to hack() the server for hackAmount money
+     */
+    hackAnalyzeThreads(host: string, hackAmount: number): number;
+
+    /**
      * Returns the chance you have of successfully hacking the specified server. This returned value is in decimal form, not percentage.
      * @param host IP or hostname of target server
      * @returns The chance you have of successfully hacking the target server
      */
     hackChance(host: string): number;
+
+    /**
+     * This function returns the number of “growths” needed in order to increase the amount of money available on the specified server by the specified amount.
+     * The specified amount is multiplicative and is in decimal form, not percentage.
+     * For example, if you want to determine how many grow() calls you need to double the amount of money on foodnstuff, you would use:
+     * @param host IP or hostname of server to analyze
+     * @param growthAmount Multiplicative factor by which the server is grown. Decimal form.
+     * @returns The amount of grow() calls needed to grow the specified server by the specified amount
+     */
+    growthAnalyze(host: string, growthAmount: number): number;
 
     /**
      * Returns the percentage of the specified server’s money you will steal with a single hack. This value is returned in percentage form, not decimal (Netscript functions typically return in decimal form, but not this one).
@@ -174,6 +193,7 @@ declare interface IGame {
     scp(file: string, source: string, destination: string): boolean;
     scp(files: string[], source: string, destination: string): boolean;
     ls(hostname: string, patter: string): string[];
+    ps(host: string): {filename: string, threads: number, args: string[]}[];
     hasRootAccess(hostname: string): boolean;
     getHostname(): string;
     getHackingLevel(): number;
