@@ -120,7 +120,7 @@ export async function main(ns) {
     log.info('scan workers...');
     let jobs = ['hack', 'grow', 'weaken'];
 
-    for (let worker of servers.botsIfAny(ns)) {
+    for (let worker of [servers.home()].concat(servers.map(ns))) {
         if (worker.canWork(ns)) {            
             for (let job of jobs) {
                 if (ns.isRunning('dh-worker-' + job + '.js', worker.name, target)) {

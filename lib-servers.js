@@ -116,14 +116,9 @@ export function map(ns) {
  * @param {IGame} ns
  */
 export function all(ns) {
-    return bots(ns).concat(map(ns)).concat([new Server('home', 1536, 0, 'weaken')]);
+    return bots(ns).concat(map(ns)).concat([home()]);
 }
 
-export function botsIfAny(ns) {
-    let bs = bots(ns);
-    if (bs.length > 0) {
-        return bs;
-    } else {
-        return map(ns).concat([new Server('home', 1536, 0, 'weaken')]);
-    }
+export function home() {
+    return new Server('home', 1536, 0, 'weaken');
 }
