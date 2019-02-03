@@ -17,7 +17,7 @@ export async function main(ns) {
         let cycleTime = weakenTime + growTime + weakenTime + hackTime;
         let hackAmount = ns.getServerMaxMoney(target.name) / 2;
 
-        if (hackAmount > 0 && cycleTime < Infinity) {
+        if (target.canHack(ns)) {
             targets.push({
                 name: target.name,
                 cycleTime: cycleTime,

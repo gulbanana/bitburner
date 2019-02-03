@@ -24,7 +24,11 @@ export class Server {
      * @param {IGame} ns
      */
     canHack(ns) {
-        return this.name != 'home' && !this.name.startsWith('bot') && ns.getHackingLevel() >= ns.getServerRequiredHackingLevel(this.name) && this.canExec(ns);
+        return this.name != 'home' && 
+               !this.name.startsWith('bot') &&
+               ns.getHackingLevel() >= ns.getServerRequiredHackingLevel(this.name) && 
+               ns.getServerMaxMoney(this.name) > 0 &&
+               this.canExec(ns);
     }
 
     /**
