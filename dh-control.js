@@ -136,11 +136,7 @@ export async function main(ns) {
     log.debug('assign idle workers...');
     for (let worker of workerMap) {
         if (worker.job === '') {
-            if (!ns.hasRootAccess(worker.name)) {
-                log.debug('enrolling ' + worker.name);
-                worker.enrol(ns);                
-                log.debug('...got root');
-            } 
+            worker.enrol(ns); 
             
             if (typeof worker.lock == 'string') {
                 await setJob(worker, worker.lock);

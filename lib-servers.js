@@ -38,10 +38,12 @@ export class Server {
      * @param {IGame} ns
      */
     enrol(ns) {
-        for (var hack of hacks(ns)) {
-            hack(this.name);
+        if (!ns.hasRootAccess(this.name)) {
+            for (var hack of hacks(ns)) {
+                hack(this.name);
+            }
+            ns.nuke(this.name);
         }
-        ns.nuke(this.name);
     }
 
     print() {
