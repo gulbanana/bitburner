@@ -81,6 +81,7 @@ export function bots(ns) {
         let ram = ns.getServerRam(host);
         all.push(new Server(host, ram[0], 0));
     }
+    all.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
     return all;
 }
 
