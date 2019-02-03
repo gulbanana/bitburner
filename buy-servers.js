@@ -3,8 +3,8 @@ import * as format from './lib-format.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    let debug = ns.args.includes('debug');
-    let log = new Logger(ns, { showDebug: true, termInfo: true, termDebug: debug });
+    let dryRun = ns.args.includes('dry') || ns.args.includes('dryrun') || ns.args.includes('dry-run');
+    let log = new Logger(ns, { termInfo: true });
 
     let existingServers = ns.getPurchasedServers();
     let existingRam = 0;
@@ -35,7 +35,7 @@ export async function main(ns) {
     if (processes.length > 0) {
         log.info('scripts running on existing servers, exit');
         ns.exit();
-    } else if (ram > existingRam) {
+    } else if (!dryRun && ram > existingRam) {
         log.info('deleting existing servers...');
         for (let i = 0; i < limit; i++) {
             ns.deleteServer('bot' + i);
