@@ -94,14 +94,16 @@ export function map(ns) {
 
     while (hosts.length > 0) {
         for (let host of hosts) {
-            for (let next of ns.scan(host)) {
-                if (!scanned.includes(next)) {
-                    hosts.push(next);
+            if (!host.startsWith('bot')) {
+                for (let next of ns.scan(host)) {
+                    if (!scanned.includes(next)) {
+                        hosts.push(next);
+                    }
                 }
+                scanned.push(host);
             }
 
             hosts.splice(hosts.indexOf(host), 1);
-            scanned.push(host);
         }            
     }
     scanned.splice(0, 1);

@@ -30,11 +30,19 @@ export async function main(ns) {
     else if (factor > 1) {
         log.info(`${ns.getHostname()}/${target}: grow by factor of ${factor}`);
 
+        let scriptRam = ns.getScriptRam('ms-worker-grow.js');
+        let reqRam = Infinity;
         let threads = Math.ceil(ns.growthAnalyze(target, factor));
-        log.info(`${ns.getHostname()}/${target}: requires ${threads} threads for ${Math.floor(ns.getGrowTime(target))} seconds`);
-
-        let scriptRam = ns.getScriptRam('ms-worker-grow.js')
-        log.info(`${ns.getHostname()}/${target}: using ${scriptRam * threads}GB of ${serverRam}GB`);
+        while (serverRam < reqRam) {
+            reqRam = scriptRam * threads;
+            log.info(`${ns.getHostname()}/${target}: requires ${threads} threads for ${Math.floor(ns.getGrowTime(target))} seconds`);
+            log.info(`${ns.getHostname()}/${target}: using ${reqRam}GB of ${serverRam}GB`);
+            if (serverRam < reqRam) {
+                log.info(`${ns.getHostname()}/${target}: ...but that's impossible. try again.`);
+                threads = Math.floor(threads / 2);
+            }
+        }
+        
         
         await ns.exec('ms-worker-grow.js', ns.getHostname(), threads, target);
     }

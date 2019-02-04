@@ -8,7 +8,7 @@ export async function main(ns) {
     var jobs = ['hack', 'grow', 'weaken'];
     var counts = { hack: 0, grow: 0, weaken: 0 };
 
-    for (let worker of servers.all(ns)) {
+    for (let worker of servers.map(ns).concat(servers.home())) {
         if (worker.canWork(ns)) {
             for (var jID in jobs) {
                 var job = jobs[jID];
