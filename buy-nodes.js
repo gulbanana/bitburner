@@ -32,6 +32,7 @@ export async function main(ns) {
                 
                 log.debug(`buy node[${newIdx}] - \$${buyNodeCost}`);
                 ns.hacknet.purchaseNode();
+                cash = cash - buyNodeCost;
                 buyNodeCost = ns.hacknet.getPurchaseNodeCost();
                 
                 costs.push(ns.hacknet.getLevelUpgradeCost(newIdx, 1));
@@ -39,7 +40,6 @@ export async function main(ns) {
                 costs.push(ns.hacknet.getCoreUpgradeCost(newIdx, 1));
                 
                 numNodes = numNodes + 1;
-                cash = cash - minCost;
                 purchased = true;
             }
         } else if (minCost <= cash) {
