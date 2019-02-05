@@ -14,7 +14,7 @@ export async function main(ns) {
     let sec = ns.getServerSecurityLevel(target);
 
     // phase 1/3: weaken to minimum
-    if (sec > minSec) {
+    if (sec-1 > minSec) {
         log.info(`${ns.getHostname()}/${target}: weaken by ${sec - minSec}`);
 
         let threads = Math.ceil((sec - minSec) / 0.05);
