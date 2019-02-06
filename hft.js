@@ -15,14 +15,14 @@ export async function main(ns) {
     function tick() {
         let stocks = market.getAll(ns);
         
-        // budget: up to 1/33rd of total wealth in a stock
+        // there are 33 stocks available, but we're assuming we won't be in all of them at once
         let cash = ns.getServerMoneyAvailable('home');
         let assets = 0;
         for (let stock of stocks) {
             assets = assets + stock.position.shares * stock.price;
         }
         log.debug(`assets: ${format.money(assets)}`);
-        let budget = (cash + assets) * 0.03;
+        let budget = (cash + assets) * 0.1;
         log.debug(`budget: ${format.money(budget)} per stock`);
 
         // calculate current and desired positions        
@@ -83,7 +83,7 @@ export async function main(ns) {
                 let shares = Math.floor(diff / stock.price);
                 let total = shares * stock.price;
 
-                if (total > commission * 100) {
+                if (total > commission * 1000) {
                     log.info(`${format.stock(stock)}: buy ${shares} (${format.money(total)})`);
 
                     if (!dryRun) {
@@ -99,8 +99,8 @@ export async function main(ns) {
                 let shares = Math.ceil(diff / stock.price);
                 let total = shares * stock.price;
 
-                if (stock.hftTarget == 0 || total > commission * 100) {
-                    if (total <= commission * 100) {
+                if (stock.hftTarget == 0 || total > commission * 1000) {
+                    if (total <= commission * 1000) {
                         log.debug(`${format.stock(stock)}: emergency sale despite commission limit`);
                     }
 
@@ -118,7 +118,7 @@ export async function main(ns) {
         }
 
         if (transacted) {
-            log.info(`profit: ${format.money(profit)}`);
+            log.info(`realised capital gains: ${format.money(profit)}`);
         }
     }
 
