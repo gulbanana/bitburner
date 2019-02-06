@@ -14,10 +14,10 @@ export async function main(ns) {
     function getPosition(sym) {
         let raw = ns.getStockPosition(sym);
         return {
-            shares: sym[0],
-            avgPx: sym[1],
-            sharesShort: sym[2],
-            avgPxShort: sym[3],
+            shares: raw[0],
+            avgPx: raw[1],
+            sharesShort: raw[2],
+            avgPxShort: raw[3],
         };
     }
 
@@ -26,6 +26,7 @@ export async function main(ns) {
      * @returns {Stock}
      */
     function getStock(sym) {
+        /** @type {Stock} */
         let stock = {};
         stock.symbol = sym;
         stock.price = ns.getStockPrice(sym);
