@@ -33,3 +33,11 @@ export function time(value) {
         return `${seconds}s`;
     }
 }
+
+/**
+ * @param {number} value
+ */
+export function decper(value) {
+    value = Math.floor(value * 10000) / 100;
+    return `${value}%`;
+}

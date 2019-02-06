@@ -286,4 +286,89 @@ declare interface IGame {
     getTimeSinceLastAug(): number;
     prompt(text: string): Promise<boolean>;
     getBitNodeMultipliers(): IBitNodeMultipliers;
+    
+    /*******/
+    /* TIX */
+    /*******/
+
+    /**
+     * Returns an array of the symbols of the tradable stocks
+     */
+    getStockSymbols(): string[];
+
+
+    /**
+     * Returns the price of a stock, given its symbol (NOT the company name). The symbol is a sequence of two to four capital letters.
+     * @param sym Stock symbol
+     */
+    getStockPrice(sym: string): number;
+
+    /**
+     * Returns an array of four elements that represents the player’s position in a stock.
+     * The first element is the returned array is the number of shares the player owns of the stock in the Long position. The second element in the array is the average price of the player’s shares in the Long position.
+     * The third element in the array is the number of shares the player owns of the stock in the Short position. The fourth element in the array is the average price of the player’s Short position.
+     * All elements in the returned array are numeric.
+     * @param sym Stock symbol
+     */
+    getStockPosition(sym: string): [number, number, number, number];
+
+    /**
+     * Returns the maximum number of shares that the stock has. This is the maximum amount of the stock that can be purchased in both the Long and Short positions combined.
+     * @param sym Stock symbol
+     */
+    getStockMaxShares(sym: string): number;
+
+    /**
+     * Attempts to purchase shares of a stock using a Market Order.
+     * If the player does not have enough money to purchase the specified number of shares, then no shares will be purchased. Remember that every transaction on the stock exchange costs a certain commission fee.
+     * @param sym Symbol of stock to purchase
+     * @param shares Number of shares to purchase. Must be positive. Will be rounded to nearest integer
+     * @returns If this function successfully purchases the shares, it will return the stock price at which each share was purchased. Otherwise, it will return 0.
+     */
+    buyStock(sym: string, shares: number): number;
+
+    /**
+     * Attempts to sell shares of a stock using a Market Order.
+     * If the specified number of shares in the function exceeds the amount that the player actually owns, then this function will sell all owned shares. Remember that every transaction on the stock exchange costs a certain commission fee.
+     * The net profit made from selling stocks with this function is reflected in the script’s statistics. This net profit is calculated as:
+     * `shares * (sell price - average price of purchased shares)`
+     * @param sym Symbol of stock to sell
+     * @param shares Number of shares to sell. Must be positive. Will be rounded to nearest integer
+     * @returns If the sale is successful, this function will return the stock price at which each share was sold. Otherwise, it will return 0.
+     */
+    sellStock(sym: string, shares: number): number;
+
+    // shortStock
+
+    // sellShort
+
+    // placeOrder
+
+    // cancelOrder
+
+    // getOrders
+
+    /******************/
+    /* 4S market data */
+    /******************/
+
+    /**
+     * Volatility represents the maximum percentage by which a stock’s price can change every tick. The volatility is returned as a decimal value, NOT a percentage (e.g. if a stock has a volatility of 3%, then this function will return 0.03, NOT 3).
+     * In order to use this function, you must first purchase access to the Four Sigma (4S) Market Data TIX API.
+     * @param sym Symbol of stock
+     * @returns Returns the volatility of the specified stock.
+     */
+    getStockVolatility(sym: string): number;
+
+    /**
+     * The probability is returned as a decimal value, NOT a percentage (e.g. if a stock has a 60% chance of increasing, then this function will return 0.6, NOT 60).
+     * In other words, if this function returned 0.30 for a stock, then this means that the stock’s price has a 30% chance of increasing and a 70% chance of decreasing during the next tick.
+     * @param sym Symbol of stock
+     * @returns Returns the probability that the specified stock’s price will increase (as opposed to decrease) during the next tick.
+     */
+    getStockForecast(sym: string): number;
+
+    // purchase4SMarketData
+
+    // purchase4SMarketDataTixApi
 }
