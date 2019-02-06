@@ -26,6 +26,7 @@ export function getStock(ns, sym) {
     let stock = {};
     stock.symbol = sym;
     stock.price = ns.getStockPrice(sym);
+    stock.maxShares = ns.getStockMaxShares(sym);
     stock.position = getPosition(ns, sym);
     stock.volatility = ns.getStockVolatility(sym);
     stock.forecast = ns.getStockForecast(sym);

@@ -84,7 +84,7 @@ export async function main(ns) {
         // buy and sell to change positions
         let transacted = false;
         for (let stock of stocks) {
-            if (stock.hftTarget > stock.hftPosition) {
+            if (stock.hftTarget > stock.hftPosition && stock.position.shares < stock.maxShares) {
                 let diff = stock.hftTarget - stock.hftPosition;
                 let shares = Math.floor(diff / stock.price);
                 let total = shares * stock.price;
@@ -123,12 +123,19 @@ export async function main(ns) {
             }
         }
 
-        //log.info(`assets: ${format.money(assets)}, session capital gains: ${format.money(profit)}`);
-        let assetChange = assets - lastAssets;
-        let timeChange = time - lastTime;
-        log.info(`assets: ${format.money(assets)}, ${format.change(lastAssets, assets)}, ${format.money(assetChange/timeChange)}/sec`);
-        lastTime = time;
-        lastAssets = assets;
+        if (transacted) {
+            log.info(`assets: ${format.money(assets)}, session capital gains: ${format.money(profit)}`);
+            lastTime = time;
+            assets = 0;
+            for (let stock of stocks) {
+                assets = assets + stock.position.shares * stock.price;
+            }    
+            lastAssets = assets;
+        } else {
+            let assetChange = assets - lastAssets;
+            let timeChange = time - lastTime;
+            log.info(`assets: ${format.money(assets)}, ${format.change(lastAssets, assets)}, ${format.money(assetChange/timeChange)}/sec`);
+        }
     }
 
     while (true) {

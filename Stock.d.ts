@@ -8,7 +8,10 @@ declare interface StockPosition {
 declare interface Stock {
     symbol: string;
     price: number;
+    maxShares: number;
+    
     position: StockPosition;
+    
     volatility: number;
     forecast: number;
 
