@@ -4,19 +4,121 @@ import * as market from './lib-market.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    let dryRun = ns.args.includes('dry') || ns.args.includes('dryrun') || ns.args.includes('dry-run');
-    let log = new Logger(ns, { });
+    let dryRun = ns.args.includes('dry');
+    let debug = ns.args.includes('debug');
+    let log = new Logger(ns, { showDebug: debug });
 
-    let thisTick = market.getAll(ns);
+    let commission = 100000;
+    let peaks = {};
+    let profit = 0;
+
     function tick() {
-        ns.tprint('===== WSE TIX + 4S marketdata =====')
+        let stocks = market.getAll(ns);
+        
+        // budget: up to 1/33rd of total wealth in a stock
+        let cash = ns.getServerMoneyAvailable('home');
+        let assets = 0;
+        for (let stock of stocks) {
+            assets = assets + stock.position.shares * stock.price;
+        }
+        log.debug(`assets: ${format.money(assets)}`);
+        let budget = (cash + assets) * 0.03;
+        log.debug(`budget: ${format.money(budget)} per stock`);
 
-        let lastTick = thisTick;
-        thisTick = market.getAll(ns);
+        // calculate current and desired positions        
+        for (let stock of stocks) {
+            stock.hftPosition = stock.position.shares * stock.position.avgPx;
+            assets = assets + stock.position.shares * stock.price;
 
-        for (let s of thisTick) {
-            let last = lastTick[s.symbol];
-            ns.tprint(`${s.symbol.padEnd(5)}: ${format.inc(last.price, s.price)}${format.money(s.price).padEnd(12)} - ${format.decper(s.forecast)} inc, ${format.decper(s.volatility)} vol`)
+            // currently holding
+            if (stock.position.shares) {
+                peaks[stock.symbol] = peaks[stock.symbol] || stock.position.avgPx;
+
+                // keep a stop at 5% below peak
+                if (stock.price > peaks[stock.symbol]) {
+                    peaks[stock.symbol] = stock.price;
+                } 
+                
+                // sell when stop reached
+                if (stock.price <= peaks[stock.symbol] * 0.95) {
+                    log.debug(`${format.stock(stock)}: reached stop, sell`);
+                    stock.hftTarget = 0;
+                }
+
+                // sell when sentiment is bad
+                else if (stock.forecast <= 0.4) {
+                    log.debug(`${format.stock(stock)}: forecast --, sell`);
+                    stock.hftTarget = 0;
+                }
+
+                // buy more when sentiment is good
+                else if (stock.forecast >= 0.6) {
+                    log.debug(`${format.stock(stock)}: forecast ++, hold or buy up to budget`);
+                    stock.hftTarget = Math.max(stock.hftPosition, budget);
+                }
+
+                // profit-take when budget exceeded and position neutral
+                else {
+                    log.debug(`${format.stock(stock)}: forecast neutral, position ${format.money(stock.hftPosition)}, buy or sell to budget`);
+                    stock.hftTarget = Math.min(stock.hftPosition, budget)
+                }
+            }
+
+            // not holding, buy if sentiment is good 
+            else if (stock.forecast >= 0.6) {
+                log.debug(`${format.stock(stock)}: forecast ++, buy`);
+                stock.hftTarget = budget;
+            }
+
+            else {
+                stock.hftTarget = stock.hftPosition;
+            }
+        }
+
+        // buy and sell to change positions
+        let transacted = false;
+        for (let stock of stocks) {
+            if (stock.hftTarget > stock.hftPosition) {
+                let diff = stock.hftTarget - stock.hftPosition;
+                let shares = Math.floor(diff / stock.price);
+                let total = shares * stock.price;
+
+                if (total > commission * 100) {
+                    log.info(`${format.stock(stock)}: buy ${shares} (${format.money(total)})`);
+
+                    if (!dryRun) {
+                        let purchasePrice = ns.buyStock(stock.symbol, shares);
+                        profit -= purchasePrice * shares;
+                        transacted = true;
+                    } 
+
+                    peaks[stock.symbol] = stock.price;
+                }
+            } else if (stock.hftTarget < stock.hftPosition) {
+                let diff = stock.hftPosition - stock.hftTarget;
+                let shares = Math.ceil(diff / stock.price);
+                let total = shares * stock.price;
+
+                if (stock.hftTarget == 0 || total > commission * 100) {
+                    if (total <= commission * 100) {
+                        log.debug(`${format.stock(stock)}: emergency sale despite commission limit`);
+                    }
+
+                    log.info(`${format.stock(stock)}: sell ${shares} (${format.money(total)})`);
+
+                    if (!dryRun) {
+                        let salePrice = ns.sellStock(stock.symbol, shares);
+                        profit += salePrice * shares;
+                        transacted = true;
+                    } 
+
+                    peaks[stock.symbol] = undefined;
+                }
+            }
+        }
+
+        if (transacted) {
+            log.info(`profit: ${format.money(profit)}`);
         }
     }
 

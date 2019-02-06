@@ -1,3 +1,5 @@
+/// <reference path="Stock.d.ts" />
+
 /**
  * @param {number} value
  */
@@ -54,4 +56,9 @@ export function inc(a, b) {
     } else {
         return ' ';
     }
+}
+
+/** @param {Stock} s */
+export function stock(s) {
+    return s.symbol.padEnd(6);
 }

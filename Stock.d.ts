@@ -11,4 +11,7 @@ declare interface Stock {
     position: StockPosition;
     volatility: number;
     forecast: number;
+
+    hftPosition?: number;
+    hftTarget?: number;
 }
