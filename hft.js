@@ -12,23 +12,29 @@ export async function main(ns) {
     let peaks = {};
     let profit = 0;
 
+    let lastTime = Date.now();
+    let lastAssets = 0;
+
     function tick() {
+        let time = Date.now();
         let stocks = market.getAll(ns);
         
         // there are 33 stocks available, but we're assuming we won't be in all of them at once
         let cash = ns.getServerMoneyAvailable('home');
+        log.debug(`cash assets: ${format.money(cash)}`);
+
         let assets = 0;
         for (let stock of stocks) {
             assets = assets + stock.position.shares * stock.price;
         }
-        log.debug(`assets: ${format.money(assets)}`);
+        log.debug(`stock assets: ${format.money(assets)}`);
+
         let budget = (cash + assets) * 0.1;
         log.debug(`budget: ${format.money(budget)} per stock`);
 
         // calculate current and desired positions        
         for (let stock of stocks) {
-            stock.hftPosition = stock.position.shares * stock.position.avgPx;
-            assets = assets + stock.position.shares * stock.price;
+            stock.hftPosition = stock.position.shares * stock.price;
 
             // currently holding
             if (stock.position.shares) {
@@ -117,9 +123,12 @@ export async function main(ns) {
             }
         }
 
-        if (transacted) {
-            log.info(`realised capital gains: ${format.money(profit)}`);
-        }
+        //log.info(`assets: ${format.money(assets)}, session capital gains: ${format.money(profit)}`);
+        let assetChange = assets - lastAssets;
+        let timeChange = time - lastTime;
+        log.info(`assets: ${format.money(assets)}, ${format.change(lastAssets, assets)}, ${format.money(assetChange/timeChange)}/sec`);
+        lastTime = time;
+        lastAssets = assets;
     }
 
     while (true) {

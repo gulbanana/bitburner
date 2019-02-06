@@ -58,6 +58,11 @@ export function inc(a, b) {
     }
 }
 
+export function change(a, b) {
+    let ratio = b > a ? (b/a-1) : (a/b-1);
+    return inc(a, b) + decper(ratio);
+}
+
 /** @param {Stock} s */
 export function stock(s) {
     return s.symbol.padEnd(6);
