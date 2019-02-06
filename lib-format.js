@@ -41,3 +41,17 @@ export function decper(value) {
     value = Math.floor(value * 10000) / 100;
     return `${value}%`;
 }
+
+/**
+ * @param {number} a
+ * @param {number} b
+ */
+export function inc(a, b) {
+    if (a < b) {
+        return '+';
+    } else if (a > b) {
+        return '-';
+    } else {
+        return ' ';
+    }
+}
