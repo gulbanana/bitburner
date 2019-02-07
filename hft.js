@@ -87,6 +87,7 @@ export async function main(ns) {
             if (stock.hftTarget > stock.hftPosition && stock.position.shares < stock.maxShares) {
                 let diff = stock.hftTarget - stock.hftPosition;
                 let shares = Math.floor(diff / stock.price);
+                shares = Math.min(stock.maxShares - stock.position.shares, shares);
                 let total = shares * stock.price;
 
                 if (total > commission * 1000) {
