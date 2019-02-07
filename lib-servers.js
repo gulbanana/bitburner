@@ -11,6 +11,7 @@ export class Server {
         this.ports = ports;
         this.lock = lock;
         this.job = '';
+        this.links = [];
     }
 
     /**
@@ -56,6 +57,10 @@ export class Server {
         } else {
             return `${this.name} (${this.ram}GB)`;
         }
+    }
+
+    toString() {
+        return this.print();
     }
 }
 
@@ -110,18 +115,26 @@ export function map(ns) {
 
     let servers = [];
     for (let host of scanned) {
-        servers.push(new Server(host, ns.getServerRam(host)[0], ns.getServerNumPortsRequired(host)));
+        let server = new Server(host, ns.getServerRam(host)[0], ns.getServerNumPortsRequired(host));
+        for (let next of ns.scan(server.name)) {
+            server.links.push(next);
+        }
+        servers.push(server);
+        servers[server.name] = server;
     }
     return servers;
 }
 
-/**
- * @param {IGame} ns
- */
+/** @param {IGame} ns */
 export function all(ns) {
-    return bots(ns).concat(map(ns)).concat([home()]);
+    return bots(ns).concat(map(ns)).concat([home(ns)]);
 }
 
-export function home() {
-    return new Server('home', 1536, 0, 'weaken');
+/** @param {IGame} ns */
+export function home(ns) {
+    let home = new Server('home', 1000000, 0, 'weaken');
+    for (let next of ns.scan("home")) {
+        home.links.push(next);
+    }
+    return home;
 }
