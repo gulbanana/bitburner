@@ -14,7 +14,7 @@ export async function main(ns) {
     ns.nuke('foodnstuff');
 
     log.info('beginning skill farming...');
-    await ns.exec('farm-worker.js', 'home', 4000000);
+    await ns.exec('farm-worker.js', 'home', 9000000);
 
     log.info('waiting for first hack skill increase...');
     while (ns.getServerSecurityLevel('foodnstuff') == ns.getServerBaseSecurityLevel('foodnstuff')) {
