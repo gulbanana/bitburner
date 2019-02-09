@@ -43,12 +43,7 @@ export class Server {
      * @param {IGame} ns
      */
     enrol(ns) {
-        if (!ns.hasRootAccess(this.name)) {
-            for (var hack of hacks(ns)) {
-                hack(this.name);
-            }
-            ns.nuke(this.name);
-        }
+        enrol(ns, this.name);
     }
 
     print() {
@@ -61,6 +56,19 @@ export class Server {
 
     toString() {
         return this.print();
+    }
+}
+
+/**
+ * @param {IGame} ns
+ * @param {string} host
+ */
+export function enrol(ns, host) {
+    if (!ns.hasRootAccess(host)) {
+        for (var hack of hacks(ns)) {
+            hack(host);
+        }
+        ns.nuke(host);
     }
 }
 

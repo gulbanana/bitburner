@@ -101,6 +101,8 @@ export async function main(ns) {
     if (ns.args.length < 1) log.error('hostname required');
     var target = ns.args[0];
 
+    servers.enrol(ns, target);
+
     var targetSecMin = ns.getServerMinSecurityLevel(target);
     var targetSecBase = ns.getServerBaseSecurityLevel(target);
     var targetSecGoal = ((targetSecBase - targetSecMin) / 2) + targetSecMin;
