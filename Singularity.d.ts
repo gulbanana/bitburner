@@ -9,7 +9,18 @@ declare interface IStats {
 }
 
 declare interface ICharacterInfo {
+    bitnode: number;
+    city: string;
+    factions: string[];
+    jobs: string[];
+    jobTitle: string[];
+    tor: boolean;
     // XXX
+}
+
+declare interface IProgram {
+    name: string;
+    price: number;
 }
 
 declare interface IGame {

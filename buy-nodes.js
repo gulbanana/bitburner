@@ -8,7 +8,7 @@ export async function main(ns) {
 
     do {
         await run(ns, log);
-        await ns.sleep(10000);
+        await ns.sleep(30000);
     } while (loop)
 }
 

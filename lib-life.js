@@ -1,6 +1,9 @@
 /// <reference path="BitBurner.d.ts" />
-/// <reference path="Singularity.d.ts" />
 import { Logger } from './lib-log.js';
+
+let HACKNET_BUYS_MAX =      10000000000;
+let PURCHASED_SERVERS_MIN = 22528000000;
+let STOCK_MARKET_MIN =     100000000000;
 
 export class Life {
     /** 
@@ -10,7 +13,68 @@ export class Life {
     constructor(ns, log) {
         this.ns = ns;
         this.log = log;
+        this.lastEval = 1;
     }
+
+    async tick() {
+        let cash = this.getCash();
+        let skill = this.ns.getHackingLevel();
+
+        // in the early game, buy a bunch of Hacknet nodes
+        if (cash < HACKNET_BUYS_MAX) {
+            await this.ensureRunning('buy-nodes.js');
+        } else if (cash >= HACKNET_BUYS_MAX) {
+            await this.ensureKilled('buy-nodes.js');
+        }
+
+        // before we can afford a server farm, use DH
+        if (cash < PURCHASED_SERVERS_MIN) {
+            if (!this.dhRunning()) {
+                if (await this.dhStart()) {
+                    this.lastEval = skill;
+                }
+            } else if (skill / this.lastEval > 1.1) {
+                if (await this.dhStop() && await this.dhStart()) {
+                    this.lastEval = skill;
+                }
+            }
+            
+        // once a server farm is available, use MS
+        } else {
+            // precondition: actually buy the servers
+            if (this.ns.getPurchasedServers().length == 0) {
+                await this.runOnce('buy-servers.js');
+            }
+
+            // precondition: shut down DH (also gives time for the server-buy to go through)
+            if (this.dhRunning()) {
+                await this.dhStop();
+            }
+
+            if (!this.msRunning()) {
+                if (await this.msStart()) {
+                    this.lastEval = skill;
+                }
+            } else if (skill / this.lastEval > 1.1) {
+                if (await this.msStop() && await this.msStart()) {
+                    this.lastEval = skill;
+                }
+            }
+        }
+
+        // if stock market trading is available, turn it on
+        let tix = false;
+        if (tix && cash < STOCK_MARKET_MIN) {
+            await this.ensureRunning('hft.js');
+        }
+
+        // use spare ram to farm hacking skill
+        this.ensureRunning('farm-worker.js', true);
+    }
+
+    /***************************/
+    /* general script controls */
+    /***************************/
 
     /**
      * @param {string} script
@@ -71,6 +135,10 @@ export class Life {
         }
     }
 
+    /******************/
+    /* info utilities */
+    /******************/
+
     getCash() {
         return this.ns.getServerMoneyAvailable('home');
     }
@@ -86,6 +154,9 @@ export class Life {
         return Math.floor(available / cost);
     }
 
+    /******************************/
+    /* hack architecture controls */
+    /******************************/
     dhRunning() {
         return this.ns.scriptRunning('dh-control.js', 'home');
     }
