@@ -62,13 +62,17 @@ async function run(ns, log) {
             
             let getF;
             let buyF;
+            let n;
             if (itemIdx == 0) {
+                n = 'level'
                 getF = ns.hacknet.getLevelUpgradeCost;
                 buyF = ns.hacknet.upgradeLevel;
             } else if (itemIdx == 1) {
+                n = 'ram';
                 getF = ns.hacknet.getRamUpgradeCost;
                 buyF = ns.hacknet.upgradeRam;
             } else if (itemIdx == 2) {
+                n = 'core';
                 getF = ns.hacknet.getCoreUpgradeCost;
                 buyF = ns.hacknet.upgradeCore;
             }
@@ -77,7 +81,7 @@ async function run(ns, log) {
                 count = count + 1;
                 cost = getF(nodeIdx, count);
             }
-            log.debug(`buy level[${nodeIdx}] x${count} - \$${cost}`);
+            log.debug(`buy ${n}[${nodeIdx}] x${count} - \$${cost}`);
             buyF(nodeIdx, count);
             costs[minIdx] = getF(nodeIdx, 1);
             
