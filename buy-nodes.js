@@ -1,4 +1,5 @@
 import { Logger } from './lib-log.js';
+import { programs } from './lib-servers.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
@@ -19,6 +20,12 @@ export async function main(ns) {
 async function run(ns, log) {
     let purchased = true;
     let cash = ns.getServerMoneyAvailable("home");
+
+    for (let program of programs()) {
+        if (!ns.fileExists(program.name, 'home') && cash >= program.price) {
+            cash = cash - program.price;
+        }
+    }
 
     log.info('loading costs');
     let numNodes = ns.hacknet.numNodes();

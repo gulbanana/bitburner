@@ -21,6 +21,7 @@ declare interface ICharacterInfo {
 declare interface IProgram {
     name: string;
     price: number;
+    hack?: (ns: IGame) => ((host: string) => void);
 }
 
 declare interface IGame {

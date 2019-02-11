@@ -74,14 +74,18 @@ export function enrol(ns, host) {
 
 /**
  * @param {IGame} ns
+ * @returns {((host: string) => void)[]}
  */
 export function hacks(ns) {
+    /** @type {((host: string) => void)[]} */
     let hacks = [];
-    if (ns.fileExists('BruteSSH.exe', 'home')) hacks.push(ns.brutessh);
-    if (ns.fileExists('FTPCrack.exe', 'home')) hacks.push(ns.ftpcrack);
-    if (ns.fileExists('relaySMTP.exe', 'home')) hacks.push(ns.relaysmtp);
-    if (ns.fileExists('HTTPWorm.exe', 'home')) hacks.push(ns.httpworm);
-    if (ns.fileExists('SQLInject.exe', 'home')) hacks.push(ns.sqlinject);
+
+    for (let program of programs()) {
+        if (program.hack && ns.fileExists(program.name, 'home')) {
+            hacks.push(program.hack(ns));
+        }
+    }
+
     return hacks;
 }
 
@@ -136,4 +140,21 @@ export function map(ns) {
 /** @param {IGame} ns */
 export function all(ns) {
     return bots(ns).concat(map(ns));
+}
+
+/**
+ * @returns {IProgram[]}
+ */
+export function programs() {
+    return [
+        { name: 'BruteSSH.exe',       price:    500000, hack: ns => ns.brutessh },
+        { name: 'FTPCrack.exe',       price:   1500000, hack: ns => ns.ftpcrack },
+        { name: 'relaySMTP.exe',      price:   5000000, hack: ns => ns.relaysmtp },
+        { name: 'HTTPWorm.exe',       price:  30000000, hack: ns => ns.httpworm },
+        { name: 'SQLInject.exe',      price: 250000000, hack: ns => ns.sqlinject },
+        { name: 'DeepscanV1.exe',     price:    500000 },
+        { name: 'DeepscanV2.exe',     price:  25000000 },
+        { name: 'AutoLink.exe',       price:   1000000 },
+        { name: 'ServerProfiler.exe', price:   1000000 },
+    ];
 }
