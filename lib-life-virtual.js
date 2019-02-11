@@ -30,6 +30,7 @@ export class VirtualLife extends Life {
                 this.log.info(`purchasing ${program.name} for ${format.money(program.price)}`);
                 this.ns.purchaseProgram(program.name);
                 cash = this.getCash();
+                this.lastEval = 1;
             }
         }
 
