@@ -92,7 +92,7 @@ export async function main(ns) {
     log.info('purchase loop complete');
 
     if (loop) {
-        await ns.sleep(60000);
+        await ns.sleep(10000);
         ns.spawn('buy-nodes.js', 1, 'loop');
     }
 }
