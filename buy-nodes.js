@@ -60,34 +60,26 @@ async function run(ns, log) {
             let cost = minCost;
             let count = 1;
             
+            let getF;
+            let buyF;
             if (itemIdx == 0) {
-                while (cost * 3 < cash) {
-                    count = count + 1;
-                    cost = ns.hacknet.getLevelUpgradeCost(nodeIdx, count);
-                }
-
-                log.debug(`buy level[${nodeIdx}] x${count} - \$${cost}`);
-                ns.hacknet.upgradeLevel(nodeIdx, count);
-                costs[minIdx] = ns.hacknet.getLevelUpgradeCost(nodeIdx, 1);
+                getF = ns.hacknet.getLevelUpgradeCost;
+                buyF = ns.hacknet.upgradeLevel;
             } else if (itemIdx == 1) {
-                while (cost * 3 < cash) {
-                    count = count + 1;
-                    cost = ns.hacknet.getRamUpgradeCost(nodeIdx, count);
-                }
-
-                log.debug(`buy ram[${nodeIdx}] x${count} - \$${cost}`);
-                ns.hacknet.upgradeRam(nodeIdx, count);
-                costs[minIdx] = ns.hacknet.getRamUpgradeCost(nodeIdx, 1);
+                getF = ns.hacknet.getRamUpgradeCost;
+                buyF = ns.hacknet.upgradeRam;
             } else if (itemIdx == 2) {
-                while (cost * 3 < cash) {
-                    count = count + 1;
-                    cost = ns.hacknet.getCoreUpgradeCost(nodeIdx, count);
-                }
-
-                log.debug(`buy core[${nodeIdx}] x${count} - \$${cost}`);
-                ns.hacknet.upgradeCore(nodeIdx, count);
-                costs[minIdx] = ns.hacknet.getCoreUpgradeCost(nodeIdx, 1);
+                getF = ns.hacknet.getCoreUpgradeCost;
+                buyF = ns.hacknet.upgradeCore;
             }
+
+            while (getF(nodeIdx, count+1) < cash) {
+                count = count + 1;
+                cost = getF(nodeIdx, count);
+            }
+            log.debug(`buy level[${nodeIdx}] x${count} - \$${cost}`);
+            buyF(nodeIdx, count);
+            costs[minIdx] = getF(nodeIdx, 1);
             
             if (count == 1) {
                 cash = cash - cost;               
