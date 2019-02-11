@@ -3,7 +3,7 @@ import { Logger } from './lib-log.js';
 
 let HACKNET_BUYS_MAX =      10000000000;
 let PURCHASED_SERVERS_MIN = 22528000000;
-let STOCK_MARKET_MIN =     100000000000;
+let STOCK_MARKET_MIN =      50000000000;
 
 export class Life {
     /** 
@@ -62,9 +62,8 @@ export class Life {
             }
         }
 
-        // if stock market trading is available, turn it on
-        let tix = false;
-        if (tix && cash < STOCK_MARKET_MIN) {
+        // assume that everyone with enough to buy stock market access has done so
+        if (cash >= STOCK_MARKET_MIN) {
             await this.ensureRunning('hft.js');
         }
 
