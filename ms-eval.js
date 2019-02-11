@@ -58,7 +58,7 @@ export async function main(ns) {
         }
         
         for (let i = 0; i < bots.length && i < targets.length; i++) {
-            log.info(`${bots[i]}: ${targets[i].name}`)
+            log.debug(`${bots[i]}: ${targets[i].name}`)
             await ns.exec('ms-setup.js', ns.getHostname(), 1, bots[i], targets[i].name);
         }
     }

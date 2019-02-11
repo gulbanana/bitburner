@@ -2,10 +2,21 @@ import { Logger } from './lib-log.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    let loop = ns.args.includes('loop');
+    let loop = !ns.args.includes('noloop');
     let debug = ns.args.includes('debug');
     let log = new Logger(ns, { showDebug: true, termInfo: !loop, termDebug: !loop && debug });
 
+    do {
+        await run(ns, log);
+        await ns.sleep(10000);
+    } while (loop)
+}
+
+/**
+ * @param {IGame} ns
+ * @param {Logger} log
+ */
+async function run(ns, log) {
     let purchased = true;
     let cash = ns.getServerMoneyAvailable("home");
 
@@ -19,7 +30,7 @@ export async function main(ns) {
     }
     let buyNodeCost = ns.hacknet.getPurchaseNodeCost();  
 
-    log.info('begin purchase loop');
+    log.info('begin purchase run');
     while (purchased) {
         purchased = false;
 
@@ -89,10 +100,5 @@ export async function main(ns) {
         }
     }
 
-    log.info('purchase loop complete');
-
-    if (loop) {
-        await ns.sleep(10000);
-        ns.spawn('buy-nodes.js', 1, 'loop');
-    }
+    log.info('purchase run complete');
 }

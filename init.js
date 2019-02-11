@@ -1,63 +1,75 @@
 import { Logger } from './lib-log.js';
-import * as format from './lib-format.js';
-import * as market from './lib-market.js';
+import { Life } from './lib-life.js';
+
+let HACKNET_BUYS_MAX =      10000000000;
+let PURCHASED_SERVERS_MIN = 22528000000;
+let STOCK_MARKET_MIN =     100000000000;
 
 /** @param {IGame} ns */
 export async function main(ns) {
     let debug = ns.args.includes('debug');
-    let log = new Logger(ns, { termInfo: true, termDebug: debug });
+    let log = new Logger(ns, { termInfo: debug });
+    let life = new Life(ns, log);
+    let lastEval = 1;
 
-    log.info('beginning hacknet node purchase loop');
-    await ns.exec('buy-nodes.js', 'home', 1, 'loop');
+    while (true) {
+        // log.debug('tick');
+        let cash = life.getCash();
+        let skill = ns.getHackingLevel();
 
-    log.info('hacking foodnstuff to enable skill farming');
-    ns.nuke('foodnstuff');
+        // in the early game, buy a bunch of Hacknet nodes
+        if (ns.hacknet.numNodes() == 0 || cash < HACKNET_BUYS_MAX) {
+            await life.ensureRunning('buy-nodes.js');
+        } else if (cash >= HACKNET_BUYS_MAX) {
+            await life.ensureKilled('buy-nodes.js');
+        }
 
-    log.info('beginning skill farming');
-    let homeRam = ns.getServerRam('home');
-    let homeFree = homeRam[0] - homeRam[1];
-    let scriptCost = ns.getScriptRam('farm-worker.js');
-    let threads = Math.floor(homeFree / scriptCost);    
-    await ns.exec('farm-worker.js', 'home', threads);
+        // XXX buy darkweb programs, train skills, etc
 
-    log.info('waiting for first hack skill increase');
-    while (ns.getServerSecurityLevel('foodnstuff') == ns.getServerBaseSecurityLevel('foodnstuff')) {
-        await ns.sleep(10000);
+        // before we can afford a server farm, use DH
+        if (cash < PURCHASED_SERVERS_MIN) {
+            if (!life.dhRunning()) {
+                if (await life.dhStart()) {
+                    lastEval = skill;
+                }
+            } else if (skill / lastEval > 1.1) {
+                if (await life.dhStop() && await life.dhStart()) {
+                    lastEval = skill;
+                }
+            }
+            
+        // once a server farm is available, use MS
+        } else {
+            // precondition: actually buy the servers
+            if (ns.getPurchasedServers().length == 0) {
+                await life.runOnce('buy-servers.js');
+            }
+
+            // precondition: shut down DH (also gives time for the server-buy to go through)
+            if (life.dhRunning()) {
+                await life.dhStop();
+            }
+
+            if (!life.msRunning()) {
+                if (await life.msStart()) {
+                    lastEval = skill;
+                }
+            } else if (skill / lastEval > 1.1) {
+                if (await life.msStop() && await life.msStart()) {
+                    lastEval = skill;
+                }
+            }
+        }
+
+        // if stock market trading is available, turn it on
+        let tix = false;
+        if (tix && cash < STOCK_MARKET_MIN) {
+            await life.ensureRunning('hft.js');
+        }
+
+        // use spare ram to farm hacking skill
+        life.ensureRunning('farm-worker.js', true);
+
+        await ns.sleep(30000);
     }
-
-    log.info('initiating distributed-hack architecture');
-    await ns.exec('dh-eval.js', 'home', 1);
-    await ns.exec('dh-control.js', 'home', 1, 'rho-construction'); // hardcoded - growth param 60, hack req 498, sec base 40
-
-    log.info('waiting to shutdown hacknet node purchase loop');
-    while (ns.getServerMoneyAvailable('home') < 10000000000) {
-        await ns.sleep(10000);
-    }
-    while (!await ns.scriptKill('buy-nodes.js', 'home')) {
-        await ns.sleep(10000);
-    }
-
-    // XXX need to get programs from the darkweb here
-
-    /*
-    log.info('waiting for enough money to buy 16TB servers');
-    while (ns.getServerMoneyAvailable('home') < 22528000000) {
-        await ns.sleep(10000);
-    }
-
-    log.info('purchasing server farm');
-    await ns.exec('buy-servers.js', 'home', 1, 'debug');
-
-    log.info('switching from distributed-hack to mega-server architecture');
-    await ns.exec('dh-stop.js', 'home', 1);
-    await ns.exec('ms-eval.js', 'home', 1, 'autostart');
-
-    log.info('waiting for enough money to trade stocks');
-    while (ns.getServerMoneyAvailable('home') < 100000000000) {
-        await ns.sleep(10000);
-    }
-
-    log.info('initiating stock trading loop');
-    await ns.exec('hft.js', 'home', 1);
-    */
 } 

@@ -135,14 +135,5 @@ export function map(ns) {
 
 /** @param {IGame} ns */
 export function all(ns) {
-    return bots(ns).concat(map(ns)).concat([home(ns)]);
-}
-
-/** @param {IGame} ns */
-export function home(ns) {
-    let home = new Server('home', 1000000, 0, 'weaken');
-    for (let next of ns.scan("home")) {
-        home.links.push(next);
-    }
-    return home;
+    return bots(ns).concat(map(ns));
 }
