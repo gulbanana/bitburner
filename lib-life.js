@@ -86,7 +86,7 @@ export class Life {
             if (threads <= 0) return;
         }
 
-        if (!this.ns.isRunning(script, 'home')) {
+        if (!this.ns.scriptRunning(script, 'home')) {
             let threads = 1;
             if (maxThreads) {
                 threads = this.getMaxThreads(script);

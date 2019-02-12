@@ -53,6 +53,12 @@ declare interface IHacknet {
     getPurchaseNodeCost(): number;
 
     /**
+     * Returns an object containing a variety of stats about the specified Hacknet Node:
+     * @param i Index/Identifier of Hacknet Node
+     */
+    getNodeStats(i: number): IHacknetNode;
+
+    /**
      * Tries to upgrade the level of the specified Hacknet Node by n.
      * Returns true if the Hacknet Node’s level is successfully upgraded by n or if it is upgraded by some positive amount and the Node reaches its max level.
      * Returns false otherwise.
@@ -97,22 +103,15 @@ declare interface IHacknetNode {
     level: number;
     ram: number;
     cores: number;
-    totalMoneyGenerated: number;
-    onlineTimeSeconds: number;
-    moneyGainRatePerSecond: number;
-
-    upgradeLevel(levels: number): boolean;
-    upgradeRam(): boolean;
-    upgradeCore(): boolean;
-    getLevelUpgradeCost(levels: number): number;
-    getRamUpgradeCost(): number;
-    getCoreUpgradeCost(): number;
+    timeOnline: number;
+    /** Node's money earned per second */
+    production: number;
+    totalProduction: number;
 }
 
 declare interface IGame {
     args: any[];
     hacknet: IHacknet;
-    hacknetnodes: IHacknetNode[];
 
     hack(hostname: string): Promise<number>;
 

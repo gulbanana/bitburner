@@ -1,11 +1,12 @@
 import { Logger } from './lib-log.js';
 import { programs } from './lib-servers.js';
+import * as format from './lib-format.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
     let loop = !ns.args.includes('noloop');
     let debug = ns.args.includes('debug');
-    let log = new Logger(ns, { showDebug: true, termInfo: !loop, termDebug: !loop && debug });
+    let log = new Logger(ns, { showDebug: debug, termInfo: !loop, termDebug: !loop && debug });
 
     do {
         await run(ns, log);
@@ -27,17 +28,30 @@ async function run(ns, log) {
         }
     }
 
-    log.info('loading costs');
+    log.debug('loading costs');
     let numNodes = ns.hacknet.numNodes();
     let costs = [];
+    let maxProduction = 0;
     for (let i = 0; i < numNodes; i++) {
         costs.push(ns.hacknet.getLevelUpgradeCost(i, 1));
         costs.push(ns.hacknet.getRamUpgradeCost(i, 1));
         costs.push(ns.hacknet.getCoreUpgradeCost(i, 1));
+        maxProduction = Math.max(maxProduction, ns.hacknet.getNodeStats(i).production)
     }
-    let buyNodeCost = ns.hacknet.getPurchaseNodeCost();  
 
-    log.info('begin purchase run');
+    let nodeCostCap = maxProduction * 60 * 60 * 24;
+    function getCappedNodeCost() {
+        let uncappedCost = ns.hacknet.getPurchaseNodeCost();
+        if (uncappedCost > nodeCostCap) {
+            log.debug(`capping node cost at ${format.money(nodeCostCap)}`)
+            return Infinity;
+        } else {
+            return uncappedCost;
+        }
+    }
+    let buyNodeCost = getCappedNodeCost();
+
+    log.debug('begin purchase run');
     while (purchased) {
         purchased = false;
 
@@ -48,10 +62,11 @@ async function run(ns, log) {
             if (buyNodeCost <= cash) {
                 let newIdx = numNodes;
                 
-                log.debug(`buy node[${newIdx}] - \$${buyNodeCost}`);
+                log.info(`buy node[${newIdx}] - ${format.money(buyNodeCost)}`);
                 ns.hacknet.purchaseNode();
                 cash = cash - buyNodeCost;
-                buyNodeCost = ns.hacknet.getPurchaseNodeCost();
+                log.info(`remaining budget: ${format.money(cash)}`);
+                buyNodeCost = getCappedNodeCost();
                 
                 costs.push(ns.hacknet.getLevelUpgradeCost(newIdx, 1));
                 costs.push(ns.hacknet.getRamUpgradeCost(newIdx, 1));
@@ -88,7 +103,7 @@ async function run(ns, log) {
                 count = count + 1;
                 cost = getF(nodeIdx, count);
             }
-            log.debug(`buy ${n}[${nodeIdx}] x${count} - \$${cost}`);
+            log.info(`buy ${n}[${nodeIdx}] x${count} - ${format.money(cost)}`);
             buyF(nodeIdx, count);
             costs[minIdx] = getF(nodeIdx, 1);
             
@@ -97,11 +112,11 @@ async function run(ns, log) {
             } else {
                 cash = ns.getServerMoneyAvailable("home");
             }
-            log.debug(`remaining budget: \$${cash}`);
+            log.info(`remaining budget: ${format.money(cash)}`);
             
             purchased = true;
         }
     }
 
-    log.info('purchase run complete');
+    log.debug('purchase run complete');
 }
