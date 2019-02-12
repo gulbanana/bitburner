@@ -193,3 +193,24 @@ export function gyms() {
         new Gym('Millenium Fitness Gym', 'Volhaven', 840),
     ]
 }
+
+export class University {
+    /**
+     * @param {string} name
+     * @param {string} city
+     * @param {number} leadershipPrice
+     */
+    constructor(name, city, leadershipPrice) {
+        this.name = name;
+        this.city = city;
+        this.leadershipPrice = leadershipPrice;
+    }
+}
+
+export function universities() {
+    return [
+        new University('Summit University', 'Aevum', 1280), 
+        new University('Rothman University', 'Sector-12', 960), 
+        new University('ZB Institute Of Technology', 'Volhaven', 1600), 
+    ]
+}

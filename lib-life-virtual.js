@@ -1,6 +1,6 @@
 /// <reference path="Singularity.d.ts" />
 import * as format from './lib-format.js';
-import { Program, Gym, programs, gyms  } from './lib-servers.js';
+import { Program, Gym, programs, gyms, universities  } from './lib-servers.js';
 import { Logger } from './lib-log.js';
 import { Life, TICK_LENGTH } from './lib-life.js';
 
@@ -147,6 +147,13 @@ export class VirtualLife extends Life {
             return new WorkItem(() => this.ns.workForFaction(factions[0].name, 'hacking'), true);
         }
 
+        // if there's nothing else to do, improve cha
+        return new WorkItem(() => {
+            let uni = this.getBestUniversity();
+            this.ensureCity(info, uni.city);
+            this.ns.universityCourse(uni.name, 'Leadership');
+        }, true);
+
         return new WorkItem(null, false);
     }
 
@@ -181,6 +188,12 @@ export class VirtualLife extends Life {
         let gs = gyms();
         gs.sort((a, b) => b.price - a.price);
         return gs[0];
+    }
+
+    getBestUniversity() {
+        let us = universities();
+        us.sort((a, b) => b.leadershipPrice - a.leadershipPrice);
+        return us[0];
     }
    
     /**

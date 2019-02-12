@@ -37,7 +37,7 @@ declare interface ICharacterInfoMultipliers {
 }
 
 declare interface IGame {
-    universityCourse(universityName: string, courseName: string): boolean;
+    universityCourse(universityName: string, courseName: 'Study Computer Science' | 'Data Structures' | 'Networks' | 'Algorithms' | 'Management' | 'Leadership'): boolean;
     gymWorkout(gymName: string, stat: string): boolean;
     travelToCity(cityName: string): boolean;
 
