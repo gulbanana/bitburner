@@ -56,11 +56,24 @@ export class VirtualLife extends Life {
      * @returns {() => void}
      */
     selectWork() {
+        // create programs 
         let skill = this.ns.getHackingLevel();
         for (let program of programs()) {
             if (!this.hasProgram(program) && program.req <= skill)  {
                 return this.ns.createProgram.bind(program.name);
             }
+        }
+
+        // work for factions
+        let factions = this.getFactions();
+        this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
+        factions = factions.filter(f => f.reputation < f.maxAugRep());
+        this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
+
+        if (factions.length > 0) {
+            factions.sort((a, b) => a.reputation - b.reputation);
+            this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
+            this.ns.workForFaction(factions[0].name, 'hacking');
         }
 
         return () => {};
@@ -71,5 +84,62 @@ export class VirtualLife extends Life {
      */
     hasProgram(program) {
         return this.ns.fileExists(program.name, 'home');
+    }
+
+    /**
+     * @returns Faction[]
+     */
+    getFactions() {
+        let info = this.ns.getCharacterInformation();
+        let augInfo = this.ns.getOwnedAugmentations(true);
+        return info.factions.map(f => 
+        {
+            let rep = this.ns.getFactionRep(f);
+            let fav = this.ns.getFactionFavor(f);
+            let fvg = this.ns.getFactionFavorGain(f);
+            let augs = this.ns.getAugmentationsFromFaction(f).map(a => {
+                let [aRep, aPrc] = this.ns.getAugmentationCost(a);
+                let has = augInfo.includes(a);
+                return new Augmentation(a, aRep, aPrc, has);
+            })
+            return new Faction(f, rep, fav, fvg, augs);
+        });
+    }
+}
+
+class Faction {
+    /**
+     * @param {string} name
+     * @param {number} rep
+     * @param {number} fav
+     * @param {number} fvg
+     * @param {Augmentation[]} augs
+     */
+    constructor(name, rep, fav, fvg, augs) {
+        this.name = name;
+        this.reputation = rep;
+        this.favor = fav;
+        this.favorGain = fvg;
+        this.augmentations = augs;
+    }
+
+    maxAugRep() {
+        return this.augmentations
+            .filter(a => !a.owned)
+            .map(a => a.requiredReputation).reduce((a, b) => Math.max(a, b));
+    }
+}
+
+class Augmentation {
+    /**
+     * @param {string} name
+     * @param {number} rep
+     * @param {number} prc
+     */
+    constructor(name, rep, prc, has) {
+        this.name = name;
+        this.requiredReputation = rep;
+        this.price = prc;
+        this.owned = has;
     }
 }
