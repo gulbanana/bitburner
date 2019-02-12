@@ -37,6 +37,9 @@ declare interface ICharacterInfoMultipliers {
 }
 
 declare interface IGame {
+    /*************************/
+    /* Source-File 4 Level 1 */
+    /*************************/
     universityCourse(universityName: string, courseName: 'Study Computer Science' | 'Data Structures' | 'Networks' | 'Algorithms' | 'Management' | 'Leadership'): boolean;
     gymWorkout(gymName: string, stat: string): boolean;
     travelToCity(cityName: string): boolean;
@@ -81,6 +84,10 @@ declare interface IGame {
     getFactionRep(companyName: string): number;
     getFactionFavor(companyName: string): number;
     getFactionFavorGain(companyName: string): number;
+
+    /*************************/
+    /* Source-File 4 Level 3 */
+    /*************************/
     donateToFaction(factionName: string, donateAmt: number): boolean;
 
     /**
