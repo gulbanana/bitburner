@@ -1,5 +1,5 @@
 import { Logger } from './lib-log.js';
-// import { Life } from './lib-life.js';
+import { TICK_LENGTH } from './lib-life.js';
 import { VirtualLife as Life } from './lib-life-virtual.js';
 
 /** @param {IGame} ns */
@@ -10,6 +10,6 @@ export async function main(ns) {
 
     while (true) {
         await life.tick();
-        await ns.sleep(30000);
+        await ns.sleep(TICK_LENGTH * 1000);
     }
 } 

@@ -4,6 +4,7 @@ import { Logger } from './lib-log.js';
 let HACKNET_BUYS_MAX =      10000000000;
 let PURCHASED_SERVERS_MIN = 22528000000;
 let STOCK_MARKET_MIN =      50000000000;
+export let TICK_LENGTH =    20; // seconds
 
 export class Life {
     /** 

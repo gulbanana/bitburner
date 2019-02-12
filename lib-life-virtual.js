@@ -2,9 +2,10 @@
 import * as format from './lib-format.js';
 import { programs } from './lib-servers.js';
 import { Logger } from './lib-log.js';
-import { Life } from './lib-life.js';
+import { Life, TICK_LENGTH } from './lib-life.js';
 
 let DARKWEB_MIN = 200000;
+let WORK_OVERRIDE_TICKS = 12;
 
 export class VirtualLife extends Life {
     /** 
@@ -47,20 +48,60 @@ export class VirtualLife extends Life {
 
         await super.tick();
 
-        // fullscreen "work" actions, prioritised
-        let workItem = this.selectWork();
-        workItem();
+        // determine whether to issue fullscreen "work" actions
+        if (this.ns.isBusy()) {
+            if (this.lastWork && !this.countup) {
+                this.log.debug('reevaluate current work');
+                if (this.lastWork.isRep) {
+                    this.ns.stopAction();
+                }
+
+                let workItem = this.selectWork();
+                if (workItem.doWork != null) {
+                    workItem.doWork();
+                } 
+
+                this.lastWork = workItem;              
+            } else {
+                this.log.debug('work overridden by player, leave it alone indefinitely');
+                this.lastWork = null;
+            }
+        } else {
+            if (!this.lastWork && !this.countup) {
+                this.log.debug('begin new work');
+                let workItem = this.selectWork();
+                if (workItem.doWork != null) {
+                    workItem.doWork();
+                } 
+
+                this.lastWork = workItem;          
+            } else {    
+                if (!this.lastWork) {
+                    this.countup = 0;
+                    this.log.debug(`overriden work cancelled by player, leave it alone for ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                } else {
+                    this.countup = this.countup || 0;
+                    this.log.debug(`automated work cancelled by player, leave it alone for ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                }
+                
+                this.countup = this.countup + 1;
+                if (this.countup > WORK_OVERRIDE_TICKS) {
+                    this.countup = 0;
+                    this.lastWork = null;
+                }
+            }
+        }
     }
 
     /**
-     * @returns {() => void}
+     * @returns {WorkItem}
      */
     selectWork() {
         // create programs 
         let skill = this.ns.getHackingLevel();
         for (let program of programs()) {
             if (!this.hasProgram(program) && program.req <= skill)  {
-                return this.ns.createProgram.bind(program.name);
+                return new WorkItem(() => this.ns.createProgram(program.name), false);
             }
         }
 
@@ -73,10 +114,10 @@ export class VirtualLife extends Life {
         if (factions.length > 0) {
             factions.sort((a, b) => a.reputation - b.reputation);
             this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
-            this.ns.workForFaction(factions[0].name, 'hacking');
+            return new WorkItem(() => this.ns.workForFaction(factions[0].name, 'hacking'), true);
         }
 
-        return () => {};
+        return new WorkItem(null, false);
     }
 
     /**
@@ -141,5 +182,16 @@ class Augmentation {
         this.requiredReputation = rep;
         this.price = prc;
         this.owned = has;
+    }
+}
+
+class WorkItem {
+    /**
+     * @param {() => void | null} doWork
+     * @param {boolean} isRep
+     */
+    constructor(doWork, isRep) {
+        this.doWork = doWork;
+        this.isRep = isRep;
     }
 }
