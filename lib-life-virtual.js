@@ -144,7 +144,7 @@ export class VirtualLife extends Life {
         if (factions.length > 0) {
             factions.sort((a, b) => a.reputation - b.reputation);
             this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
-            return new WorkItem(() => this.ns.workForFaction(factions[0].name, 'hacking'), true);
+            return new WorkItem(() => this.ns.workForFaction(factions[0].name, factions[0].job), true);
         }
 
         // if there's nothing else to do, improve cha
@@ -180,7 +180,7 @@ export class VirtualLife extends Life {
                 let has = augInfo.includes(a);
                 return new Augmentation(a, aRep, aPrc, has);
             })
-            return new Faction(f, rep, fav, fvg, augs);
+            return new Faction(f, rep, fav, fvg, augs, Faction.gangs().includes(f) ? 'security' : 'hacking');
         });
     }
 
@@ -218,13 +218,15 @@ class Faction {
      * @param {number} fav
      * @param {number} fvg
      * @param {Augmentation[]} augs
+     * @param {"hacking" | "security"} job
      */
-    constructor(name, rep, fav, fvg, augs) {
+    constructor(name, rep, fav, fvg, augs, job) {
         this.name = name;
         this.reputation = rep;
         this.favor = fav;
         this.favorGain = fvg;
         this.augmentations = augs;
+        this.job = job;
     }
 
     maxAugRep() {
@@ -235,6 +237,10 @@ class Faction {
 
     static cities() {
         return ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'];
+    }
+
+    static gangs() {
+        return ['Slum Snakes', 'Tetrads'];
     }
 }
 
