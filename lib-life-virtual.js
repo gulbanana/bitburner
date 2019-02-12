@@ -48,6 +48,13 @@ export class VirtualLife extends Life {
 
         await super.tick();
 
+        for (let invite of this.ns.checkFactionInvitations()) {
+            if (!Faction.cities().includes(invite)) {
+                this.log.info(`join faction ${invite}`);
+                this.ns.joinFaction(invite);
+            }
+        }
+
         // determine whether to issue fullscreen "work" actions
         if (this.ns.isBusy()) {
             if (this.lastWork && !this.countup) {
@@ -168,6 +175,10 @@ class Faction {
         return this.augmentations
             .filter(a => !a.owned)
             .map(a => a.requiredReputation).reduce((a, b) => Math.max(a, b));
+    }
+
+    static cities() {
+        return ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'];
     }
 }
 
