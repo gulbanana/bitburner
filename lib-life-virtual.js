@@ -1,11 +1,13 @@
 /// <reference path="Singularity.d.ts" />
 import * as format from './lib-format.js';
-import { programs } from './lib-servers.js';
+import { Program, Gym, programs, gyms  } from './lib-servers.js';
 import { Logger } from './lib-log.js';
 import { Life, TICK_LENGTH } from './lib-life.js';
 
-let DARKWEB_MIN = 200000;
 let WORK_OVERRIDE_TICKS = 12;
+let DARKWEB_MIN = 200000;
+let WORKOUT_MIN = 5000000;
+let STAT_GOAL_BASE = 50;
 
 export class VirtualLife extends Life {
     /** 
@@ -63,7 +65,7 @@ export class VirtualLife extends Life {
                     this.ns.stopAction();
                 }
 
-                let workItem = this.selectWork();
+                let workItem = this.selectWork(cash);
                 if (workItem.doWork != null) {
                     workItem.doWork();
                 } 
@@ -76,7 +78,7 @@ export class VirtualLife extends Life {
         } else {
             if (!this.lastWork && !this.countup) {
                 this.log.debug('begin new work');
-                let workItem = this.selectWork();
+                let workItem = this.selectWork(cash);
                 if (workItem.doWork != null) {
                     workItem.doWork();
                 } 
@@ -93,6 +95,7 @@ export class VirtualLife extends Life {
                 
                 this.countup = this.countup + 1;
                 if (this.countup > WORK_OVERRIDE_TICKS) {
+                    this.log.debug(`resume new work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_LENGTH)}`);
                     this.countup = 0;
                     this.lastWork = null;
                 }
@@ -102,18 +105,38 @@ export class VirtualLife extends Life {
 
     /**
      * @returns {WorkItem}
+     * @param {number} cash
      */
-    selectWork() {
-        // create programs 
-        let skill = this.ns.getHackingLevel();
+    selectWork(cash) {
+        let info = this.ns.getCharacterInformation();
+        let stats = this.ns.getStats();
+        let skill = stats.hacking;
+
+        // create programs      
         for (let program of programs()) {
             if (!this.hasProgram(program) && program.req <= skill)  {
                 return new WorkItem(() => this.ns.createProgram(program.name), false);
             }
         }
 
+        // improve stats
+        if (cash >= WORKOUT_MIN) {
+            let statGoals = {};
+            for (let stat of ['strength', 'defense', 'dexterity', 'agility']) {
+                statGoals[stat] = STAT_GOAL_BASE * info.mult[stat] * info.mult[stat + 'Exp'];
+                if (stats[stat] < statGoals[stat]) {
+                    this.log.debug(`${stat} ${stats[stat]} < goal ${statGoals[stat]}`);
+                    return new WorkItem(() => {
+                        let gym = this.getBestGym();
+                        this.ensureCity(info, gym.city);
+                        this.ns.gymWorkout(gym.name, stat);
+                    }, true);
+                }
+            }
+        }
+
         // work for factions
-        let factions = this.getFactions();
+        let factions = this.getFactions(info);
         this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
         factions = factions.filter(f => f.reputation < f.maxAugRep());
         this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
@@ -128,7 +151,7 @@ export class VirtualLife extends Life {
     }
 
     /**
-     * @param {IProgram} program
+     * @param {Program} program
      */
     hasProgram(program) {
         return this.ns.fileExists(program.name, 'home');
@@ -136,9 +159,9 @@ export class VirtualLife extends Life {
 
     /**
      * @returns Faction[]
+     * @param {ICharacterInfo} [info]
      */
-    getFactions() {
-        let info = this.ns.getCharacterInformation();
+    getFactions(info) {
         let augInfo = this.ns.getOwnedAugmentations(true);
         return info.factions.map(f => 
         {
@@ -152,6 +175,26 @@ export class VirtualLife extends Life {
             })
             return new Faction(f, rep, fav, fvg, augs);
         });
+    }
+
+    getBestGym() {
+        let gs = gyms();
+        gs.sort((a, b) => b.price - a.price);
+        return gs[0];
+    }
+   
+    /**
+     * @param {ICharacterInfo} info
+     * @param {string} name
+     */
+    ensureCity(info, name) {
+        if (info.city != name) {
+            if (this.ns.travelToCity(name)) {
+                this.log.info('travelled to ' + name);
+            } else {
+                this.log.error(`travel to ${name} failed`);
+            }
+        }
     }
 }
 

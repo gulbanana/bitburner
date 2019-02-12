@@ -15,14 +15,25 @@ declare interface ICharacterInfo {
     jobs: string[];
     jobTitle: string[];
     tor: boolean;
-    // XXX
+
+    mult: ICharacterInfoMultipliers;
+
+    timeWorked: number;
+    workHackExpGain: number;
+    workStrExpGain: number;
+    workDefExpGain: number;
+    workDexExpGain: number;
+    workAgiExpGain: number;
+    workChaExpGain: number;
+    workRepGain: number;
+    workMoneyGain: number;
 }
 
-declare interface IProgram {
-    req: number;
-    name: string;
-    price: number;
-    hack?: (ns: IGame) => ((host: string) => void);
+declare interface ICharacterInfoMultipliers {
+    charisma: number;
+    charismaExp: number;
+
+    // XXX
 }
 
 declare interface IGame {

@@ -142,19 +142,54 @@ export function all(ns) {
     return bots(ns).concat(map(ns));
 }
 
-/**
- * @returns {IProgram[]}
- */
+export class Program {
+    /**
+     * @param {number} req
+     * @param {string} name
+     * @param {number} price
+     * @param {(ns: IGame) => ((host: string) => void)} [hack]
+     */
+    constructor(req, name, price, hack) {
+        this.req = req;
+        this.name = name;
+        this.price = price;
+        this.hack = hack;
+    }
+}
+
 export function programs() {
     return [
-        { req:  50, name: 'BruteSSH.exe',       price:    500000, hack: ns => ns.brutessh },
-        { req: 100, name: 'FTPCrack.exe',       price:   1500000, hack: ns => ns.ftpcrack },
-        { req: 250, name: 'relaySMTP.exe',      price:   5000000, hack: ns => ns.relaysmtp },
-        { req: 500, name: 'HTTPWorm.exe',       price:  30000000, hack: ns => ns.httpworm },
-        { req: 750, name: 'SQLInject.exe',      price: 250000000, hack: ns => ns.sqlinject },
-        { req:  75, name: 'DeepscanV1.exe',     price:    500000 },
-        { req: 400, name: 'DeepscanV2.exe',     price:  25000000 },
-        { req:  25, name: 'AutoLink.exe',       price:   1000000 },
-        { req:  75, name: 'ServerProfiler.exe', price:   1000000 },
+        new Program( 50, 'BruteSSH.exe',          500000, ns => ns.brutessh),
+        new Program(100, 'FTPCrack.exe',         1500000, ns => ns.ftpcrack),
+        new Program(250, 'relaySMTP.exe',        5000000, ns => ns.relaysmtp),
+        new Program(500, 'HTTPWorm.exe',        30000000, ns => ns.httpworm),
+        new Program(750, 'SQLInject.exe',      250000000, ns => ns.sqlinject),
+        new Program( 75, 'DeepscanV1.exe',        500000),
+        new Program(400, 'DeepscanV2.exe',      25000000),
+        new Program( 25, 'AutoLink.exe',         1000000),
+        new Program( 75, 'ServerProfiler.exe',   1000000),
     ];
+}
+
+export class Gym {
+    /**
+     * @param {string} name
+     * @param {string} city
+     * @param {number} price
+     */
+    constructor(name, city, price) {
+        this.name = name;
+        this.city = city;
+        this.price = price;
+    }
+}
+
+export function gyms() {
+    return [
+        new Gym('Crush Fitness Gym', 'Aevum', 360), 
+        new Gym('Snap Fitness Gym', 'Aevum', 1200), 
+        new Gym('Iron Gym', 'Sector-12', 120), 
+        new Gym('Powerhouse Gym', 'Sector-12', 2400), 
+        new Gym('Millenium Fitness Gym', 'Volhaven', 840),
+    ]
 }

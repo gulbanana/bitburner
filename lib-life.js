@@ -14,7 +14,7 @@ export class Life {
     constructor(ns, log) {
         this.ns = ns;
         this.log = log;
-        this.lastEval = 1;
+        this.lastEval = ns.getHackingLevel();
     }
 
     async tick() {
