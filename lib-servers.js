@@ -147,14 +147,14 @@ export function all(ns) {
  */
 export function programs() {
     return [
-        { name: 'BruteSSH.exe',       price:    500000, hack: ns => ns.brutessh },
-        { name: 'FTPCrack.exe',       price:   1500000, hack: ns => ns.ftpcrack },
-        { name: 'relaySMTP.exe',      price:   5000000, hack: ns => ns.relaysmtp },
-        { name: 'HTTPWorm.exe',       price:  30000000, hack: ns => ns.httpworm },
-        { name: 'SQLInject.exe',      price: 250000000, hack: ns => ns.sqlinject },
-        { name: 'DeepscanV1.exe',     price:    500000 },
-        { name: 'DeepscanV2.exe',     price:  25000000 },
-        { name: 'AutoLink.exe',       price:   1000000 },
-        { name: 'ServerProfiler.exe', price:   1000000 },
+        { req:  50, name: 'BruteSSH.exe',       price:    500000, hack: ns => ns.brutessh },
+        { req: 100, name: 'FTPCrack.exe',       price:   1500000, hack: ns => ns.ftpcrack },
+        { req: 250, name: 'relaySMTP.exe',      price:   5000000, hack: ns => ns.relaysmtp },
+        { req: 500, name: 'HTTPWorm.exe',       price:  30000000, hack: ns => ns.httpworm },
+        { req: 750, name: 'SQLInject.exe',      price: 250000000, hack: ns => ns.sqlinject },
+        { req:  75, name: 'DeepscanV1.exe',     price:    500000 },
+        { req: 400, name: 'DeepscanV2.exe',     price:  25000000 },
+        { req:  25, name: 'AutoLink.exe',       price:   1000000 },
+        { req:  75, name: 'ServerProfiler.exe', price:   1000000 },
     ];
 }

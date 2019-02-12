@@ -19,6 +19,7 @@ declare interface ICharacterInfo {
 }
 
 declare interface IProgram {
+    req: number;
     name: string;
     price: number;
     hack?: (ns: IGame) => ((host: string) => void);
@@ -58,5 +59,23 @@ declare interface IGame {
     /*************************/
     upgradeHomeRam(): boolean;
     getUpgradeHomeRamCost(): number;
-    // XXX many more
+    workForCompany(): boolean;
+    applyToCompany(companyName: string, field: string): boolean;
+    getCompanyRep(companyName: string): number;
+    getCompanyFavor(companyName: string): number;
+    getCompanyFavorGain(companyName: string): number;
+    checkFactionInvitations(): string[];
+    joinFaction(name: string);
+    getFactionRep(companyName: string): number;
+    getFactionFavor(companyName: string): number;
+    getFactionFavorGain(companyName: string): number;
+    donateToFaction(factionName: string, donateAmt: number): boolean;
+
+    /**
+     * This function will automatically set you to start working on creating the specified program. If you are already in the middle of some “working” action (such as working for a company, training at a gym, or taking a course), then running this function will automatically cancel that action and give you your earnings.
+     * @param programName Name of program to create. Not case-sensitive
+     */
+    createProgram(programName: string): boolean;
+
+    // XXX more
 }

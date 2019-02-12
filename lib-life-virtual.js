@@ -15,9 +15,11 @@ export class VirtualLife extends Life {
         super(ns, log);
     }
 
+    // singularity-only life automation functions
     async tick() {
         let cash = this.getCash();
-
+        
+        // purchase: darkweb router
         if (cash >= DARKWEB_MIN) {
             if (!this.ns.getCharacterInformation().tor) {
                 this.log.info(`purchasing TOR router for ${format.money(DARKWEB_MIN)}`);
@@ -26,8 +28,9 @@ export class VirtualLife extends Life {
             }
         }
 
+        // purchase: darkweb programs (requires router, but it's cheaper than all of them)
         for (var program of programs()) {
-            if (!this.ns.fileExists(program.name, 'home') && cash >= program.price) {
+            if (!this.hasProgram(program) && cash >= program.price) {
                 this.log.info(`purchasing ${program.name} for ${format.money(program.price)}`);
                 this.ns.purchaseProgram(program.name);
                 cash = this.getCash();
@@ -35,11 +38,38 @@ export class VirtualLife extends Life {
             }
         }
 
+        // purchase: home computer upgrades - persists through aug reset, makes early farming better
         while (cash >= this.ns.getUpgradeHomeRamCost()) {
+            this.log.info(`purchasing home RAM upgrade`);
             this.ns.upgradeHomeRam();
             cash = this.getCash();
         }
 
         await super.tick();
+
+        // fullscreen "work" actions, prioritised
+        let workItem = this.selectWork();
+        workItem();
+    }
+
+    /**
+     * @returns {() => void}
+     */
+    selectWork() {
+        let skill = this.ns.getHackingLevel();
+        for (let program of programs()) {
+            if (!this.hasProgram(program) && program.req <= skill)  {
+                return this.ns.createProgram.bind(program.name);
+            }
+        }
+
+        return () => {};
+    }
+
+    /**
+     * @param {IProgram} program
+     */
+    hasProgram(program) {
+        return this.ns.fileExists(program.name, 'home');
     }
 }
