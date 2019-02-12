@@ -35,6 +35,11 @@ export class VirtualLife extends Life {
             }
         }
 
+        while (cash >= this.ns.getUpgradeHomeRamCost()) {
+            this.ns.upgradeHomeRam();
+            cash = this.getCash();
+        }
+
         await super.tick();
     }
 }

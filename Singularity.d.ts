@@ -53,5 +53,10 @@ declare interface IGame {
      */
     stopAction(): boolean;
 
+    /*************************/
+    /* Source-File 4 Level 2 */
+    /*************************/
+    upgradeHomeRam(): boolean;
+    getUpgradeHomeRamCost(): number;
     // XXX many more
 }
