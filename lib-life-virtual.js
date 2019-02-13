@@ -7,7 +7,7 @@ import { Life, TICK_LENGTH } from './lib-life.js';
 let WORK_OVERRIDE_TICKS = 12;
 let DARKWEB_MIN = 200000;
 let WORKOUT_MIN = 5000000;
-let STAT_GOAL_BASE = 50;
+let STAT_GOAL_BASE = 75;
 
 export class VirtualLife extends Life {
     /** 
