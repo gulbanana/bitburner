@@ -60,25 +60,35 @@ export class VirtualLife extends Life {
         // determine whether to issue fullscreen "work" actions
         if (this.ns.isBusy()) {
             if (this.lastWork && !this.countup) {
-                this.log.debug('reevaluate current work');
                 if (this.lastWork.isRep) {
                     this.ns.stopAction();
                 }
 
                 let workItem = this.selectWork(cash);
-                if (workItem.doWork != null) {
-                    workItem.doWork();
-                } 
+                
+                if (this.lastWork.name == workItem.name) {
+                    this.log.debug(`continue work ${this.lastWork.name}`);
+                    if (this.lastWork.isRep) {
+                        if (workItem.doWork != null) {
+                            workItem.doWork();
+                        } 
+                    }
+                } else {
+                    this.log.info(`stop work ${this.lastWork.name}; start work ${workItem.name}`);
+                    if (workItem.doWork != null) {
+                        workItem.doWork();
+                    } 
+                }
 
                 this.lastWork = workItem;              
             } else {
-                this.log.debug('work overridden by player, leave it alone indefinitely');
+                this.log.debug('automated work overridden by player, pause indefinitely');
                 this.lastWork = null;
             }
         } else {
             if (!this.lastWork && !this.countup) {
-                this.log.debug('begin new work');
                 let workItem = this.selectWork(cash);
+                this.log.info(`start work ${workItem.name}`);
                 if (workItem.doWork != null) {
                     workItem.doWork();
                 } 
@@ -87,15 +97,16 @@ export class VirtualLife extends Life {
             } else {    
                 if (!this.lastWork) {
                     this.countup = 0;
-                    this.log.debug(`overriden work cancelled by player, leave it alone for ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    this.log.debug(`overriden work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    this.lastWork = new WorkItem('override', null, false);
                 } else {
                     this.countup = this.countup || 0;
-                    this.log.debug(`automated work cancelled by player, leave it alone for ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    this.log.debug(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
                 }
                 
                 this.countup = this.countup + 1;
                 if (this.countup > WORK_OVERRIDE_TICKS) {
-                    this.log.debug(`resume new work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_LENGTH)}`);
+                    this.log.debug(`resume automated work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_LENGTH)}`);
                     this.countup = 0;
                     this.lastWork = null;
                 }
@@ -115,7 +126,7 @@ export class VirtualLife extends Life {
         // create programs      
         for (let program of programs()) {
             if (!this.hasProgram(program) && program.req <= skill)  {
-                return new WorkItem(() => this.ns.createProgram(program.name), false);
+                return new WorkItem('program-' + program.name, () => this.ns.createProgram(program.name), false);
             }
         }
 
@@ -126,7 +137,7 @@ export class VirtualLife extends Life {
                 statGoals[stat] = STAT_GOAL_BASE * info.mult[stat] * info.mult[stat + 'Exp'];
                 if (stats[stat] < statGoals[stat]) {
                     this.log.debug(`${stat} ${stats[stat]} < goal ${statGoals[stat]}`);
-                    return new WorkItem(() => {
+                    return new WorkItem('train-' + stat, () => {
                         let gym = this.getBestGym();
                         this.ensureCity(info, gym.city);
                         this.ns.gymWorkout(gym.name, stat);
@@ -144,19 +155,19 @@ export class VirtualLife extends Life {
         if (factions.length > 0) {
             factions.sort((a, b) => a.reputation - b.reputation);
             this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
-            return new WorkItem(() => this.ns.workForFaction(factions[0].name, factions[0].job), true);
+            return new WorkItem('faction-' + factions[0].name, () => this.ns.workForFaction(factions[0].name, factions[0].job), true);
         }
 
         // if there's nothing else to do, improve cha
         if (cash >= TRAIN_MIN) {
-            return new WorkItem(() => {
+            return new WorkItem('university', () => {
                 let uni = this.getBestUniversity();
                 this.ensureCity(info, uni.city);
                 this.ns.universityCourse(uni.name, 'Leadership');
             }, true);
         }
 
-        return new WorkItem(null, false);
+        return new WorkItem('nothing', null, false);
     }
 
     /**
@@ -262,10 +273,12 @@ class Augmentation {
 
 class WorkItem {
     /**
+     * @param {string} name
      * @param {() => void | null} doWork
      * @param {boolean} isRep
      */
-    constructor(doWork, isRep) {
+    constructor(name, doWork, isRep) {
+        this.name = name;
         this.doWork = doWork;
         this.isRep = isRep;
     }
