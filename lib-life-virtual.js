@@ -6,7 +6,7 @@ import { Life, TICK_LENGTH } from './lib-life.js';
 
 let WORK_OVERRIDE_TICKS = 12;
 let DARKWEB_MIN = 200000;
-let WORKOUT_MIN = 5000000;
+let TRAIN_MIN = 5000000;
 let STAT_GOAL_BASE = 75;
 
 export class VirtualLife extends Life {
@@ -120,7 +120,7 @@ export class VirtualLife extends Life {
         }
 
         // improve stats
-        if (cash >= WORKOUT_MIN) {
+        if (cash >= TRAIN_MIN) {
             let statGoals = {};
             for (let stat of ['strength', 'defense', 'dexterity', 'agility']) {
                 statGoals[stat] = STAT_GOAL_BASE * info.mult[stat] * info.mult[stat + 'Exp'];
@@ -148,11 +148,13 @@ export class VirtualLife extends Life {
         }
 
         // if there's nothing else to do, improve cha
-        return new WorkItem(() => {
-            let uni = this.getBestUniversity();
-            this.ensureCity(info, uni.city);
-            this.ns.universityCourse(uni.name, 'Leadership');
-        }, true);
+        if (cash >= TRAIN_MIN) {
+            return new WorkItem(() => {
+                let uni = this.getBestUniversity();
+                this.ensureCity(info, uni.city);
+                this.ns.universityCourse(uni.name, 'Leadership');
+            }, true);
+        }
 
         return new WorkItem(null, false);
     }
