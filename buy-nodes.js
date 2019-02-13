@@ -99,9 +99,9 @@ async function run(ns, log) {
                 buyF = ns.hacknet.upgradeCore;
             }
 
-            while (getF(nodeIdx, count+1) < cash) {
+            while (cost + getF(nodeIdx, count+1) < cash) {
                 count = count + 1;
-                cost = getF(nodeIdx, count);
+                cost = cost + getF(nodeIdx, count);
             }
             log.info(`buy ${n}[${nodeIdx}] x${count} - ${format.money(cost)}`);
             buyF(nodeIdx, count);
