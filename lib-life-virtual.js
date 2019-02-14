@@ -245,7 +245,8 @@ class Faction {
     maxAugRep() {
         return this.augmentations
             .filter(a => !a.owned)
-            .map(a => a.requiredReputation).reduce((a, b) => Math.max(a, b));
+            .map(a => a.requiredReputation)
+            .reduce((a, b) => Math.max(a, b), 0);
     }
 
     static cities() {
