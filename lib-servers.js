@@ -145,7 +145,7 @@ export function all(ns) {
 export class Program {
     /**
      * @param {number} req
-     * @param {string} name
+     * @param {ProgramName} name
      * @param {number} price
      * @param {(ns: IGame) => ((host: string) => void)} [hack]
      */

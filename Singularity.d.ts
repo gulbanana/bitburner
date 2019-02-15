@@ -36,6 +36,10 @@ declare interface ICharacterInfoMultipliers {
     // XXX
 }
 
+declare type ProgramName = 'BruteSSH.exe' | 'FTPCrack.exe' | 'relaySMTP.exe' | 'HTTPWorm.exe' | 'SQLInject.exe' | 'DeepscanV1.exe' | 'DeepscanV2.exe' | 'ServerProfiler.exe' | 'AutoLink.exe';
+
+declare type CrimeName = 'shoplift' | 'rob store' | 'mug' | 'larceny' | 'deal drugs' | 'bond forgery' | 'traffick arms' | 'homicide' | 'grand theft auto' | 'kidnap' | 'assassinate' | 'heist';
+
 declare interface IGame {
     /*************************/
     /* Source-File 4 Level 1 */
@@ -88,22 +92,38 @@ declare interface IGame {
     /*************************/
     /* Source-File 4 Level 3 */
     /*************************/
+    
+    /**
+     * Attempts to donate money to the specified faction in exchange for reputation. Returns true if you successfully donate the money, and false otherwise.
+     * @param factionName Name of faction to donate to. CASE-SENSITIVE
+     * @param donateAmt Amount of money to donate
+     */
     donateToFaction(factionName: string, donateAmt: number): boolean;
 
     /**
      * This function will automatically set you to start working on creating the specified program. If you are already in the middle of some “working” action (such as working for a company, training at a gym, or taking a course), then running this function will automatically cancel that action and give you your earnings.
      * @param programName Name of program to create. Not case-sensitive
      */
-    createProgram(programName: string): boolean;
+    createProgram(programName: ProgramName): boolean;
 
-    commitCrime(crime: string): number;
+    /**
+     * This function is used to automatically attempt to commit crimes. If you are already in the middle of some ‘working’ action (such as working for a company or training at a gym), then running this function will automatically cancel that action and give you your earnings.
+     * This function returns the number of seconds it takes to attempt the specified crime (e.g It takes 60 seconds to attempt the ‘Rob Store’ crime, so running commitCrime(‘rob store’) will return 60).
+     * Warning: I do not recommend using the time returned from this function to try and schedule your crime attempts. Instead, I would use the isBusy() Singularity function to check whether you have finished attempting a crime. This is because although the game sets a certain crime to be X amount of seconds, there is no guarantee that your browser will follow that time limit.
+     * @param crime Name of crime to attempt. Not case-sensitive. This argument is fairly lenient in terms of what inputs it accepts.
+     */
+    commitCrime(crime: CrimeName): number;
     
     /**
      * This function returns your chance of success at commiting the specified crime. The chance is returned as a decimal (i.e. 60% would be returned as 0.6).
      * @param crime Name of crime. Not case-sensitive. This argument is fairlyn lenient in terms of what inputs it accepts. Check the documentation for the commitCrime() function for a list of example inputs.
      */
-    getCrimeChance(crime: string): number;
+    getCrimeChance(crime: CrimeName): number;
     
+    /**
+     * This function returns an array containing the names (as strings) of all Augmentations you have.
+     * @param purchased Specifies whether the returned array should include Augmentations you have purchased but not yet installed. By default, this argument is false which means that the return value will NOT have the purchased Augmentations.
+     */
     getOwnedAugmentations(purchased?: boolean): string[]
 
     /**
@@ -131,5 +151,11 @@ declare interface IGame {
      * @returns This function will return true if the Augmentation is successfully purchased, and false otherwise.
      */
     purchaseAugmentation(factionName: string, augName: string): boolean;
-    // XXX more
+    
+    /**
+     * This function will automatically install your Augmentations, resetting the game as usual.
+     * @param cbScript Optional callback script. This is a script that will automatically be run after Augmentations are installed (after the reset). This script will be run with no arguments and 1 thread. It must be located on your home computer.
+     * @returns It will return true if successful, and false otherwise.
+     */
+    installAugmentations(cbScript: string): boolean;
 }
