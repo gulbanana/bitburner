@@ -4,7 +4,7 @@ import { Program, Gym, programs, gyms, universities  } from './lib-servers.js';
 import { Logger } from './lib-log.js';
 import { Life, TICK_LENGTH } from './lib-life.js';
 
-let WORK_OVERRIDE_TICKS = 12;
+let WORK_OVERRIDE_TICKS = 10;
 let DARKWEB_MIN = 200000;
 let TRAIN_MIN = 5000000;
 let STAT_GOAL_BASE = 75;
@@ -16,12 +16,13 @@ export class VirtualLife extends Life {
      */
     constructor(ns, log) {
         super(ns, log);
+        this.lastCash = this.getCash();
     }
 
     // singularity-only life automation functions
     async tick() {
         let cash = this.getCash();
-        
+
         // purchase: darkweb router
         if (cash >= DARKWEB_MIN) {
             if (!this.ns.getCharacterInformation().tor) {
@@ -82,7 +83,7 @@ export class VirtualLife extends Life {
 
                 this.lastWork = workItem;              
             } else {
-                this.log.debug('automated work overridden by player, pause indefinitely');
+                this.log.info('automated work overridden by player, pause indefinitely');
                 this.lastWork = null;
             }
         } else {
@@ -97,21 +98,28 @@ export class VirtualLife extends Life {
             } else {    
                 if (!this.lastWork) {
                     this.countup = 0;
-                    this.log.debug(`overriden work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    this.log.info(`overriden work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
                     this.lastWork = new WorkItem('override', null, false);
                 } else {
                     this.countup = this.countup || 0;
-                    this.log.debug(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    if (this.countup == 0) {
+                        this.log.info(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    } else {
+                        this.log.debug(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    }
                 }
                 
                 this.countup = this.countup + 1;
                 if (this.countup > WORK_OVERRIDE_TICKS) {
-                    this.log.debug(`resume automated work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_LENGTH)}`);
+                    this.log.info(`resume automated work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_LENGTH)}`);
                     this.countup = 0;
                     this.lastWork = null;
+                    await this.tick();
                 }
             }
         }
+
+        this.lastCash = this.getCash();
     }
 
     /**
@@ -145,7 +153,7 @@ export class VirtualLife extends Life {
                 }
             }
         }
-
+        
         // work for factions
         let factions = this.getFactions(info);
         this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
@@ -157,6 +165,38 @@ export class VirtualLife extends Life {
             this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
             return new WorkItem('faction-' + factions[0].name, () => this.ns.workForFaction(factions[0].name, factions[0].job), true);
         }
+
+        // if all factions are maxed out, buy some of their augs
+        let cashRate = (cash - this.lastCash) / TICK_LENGTH;
+        this.log.debug(`cash rate: ${format.money(cashRate)}/sec`);
+
+        let maxAugCost = cashRate * 60 * 60; // an hour's income
+        this.log.debug(`max aug cost: ${format.money(maxAugCost)}`);
+
+        // augs we don't already have
+        let availableAugs = this.getFactions(info)
+            .map(f => f.augmentations)
+            .reduce((a, b) => a.concat(b), [])
+            .filter(a => !a.owned);
+
+        // most expensive augs first, because the price doubles each time
+        let affordableAugs = availableAugs
+            .filter(a => a.price <= maxAugCost)
+            .sort((a, b) => b.price - a.price);
+
+        if (affordableAugs.length > 0) {
+            this.log.debug("best affordable aug: " + affordableAugs[0]);
+            for (let a of affordableAugs) {
+                if (a.price <= cash) {
+                    if (this.ns.purchaseAugmentation(a.faction, a.name)) {
+                        this.log.info(`bought aug ${a}`);
+                        cash = this.getCash();
+                    } else {
+                        this.log.info(`failed to buy aug ${a}`);
+                    }
+                }
+            }
+        }        
 
         // if there's nothing else to do, improve cha
         if (cash >= TRAIN_MIN) {
@@ -179,7 +219,7 @@ export class VirtualLife extends Life {
 
     /**
      * @returns Faction[]
-     * @param {ICharacterInfo} [info]
+     * @param {ICharacterInfo} info
      */
     getFactions(info) {
         let augInfo = this.ns.getOwnedAugmentations(true);
@@ -191,7 +231,7 @@ export class VirtualLife extends Life {
             let augs = this.ns.getAugmentationsFromFaction(f).map(a => {
                 let [aRep, aPrc] = this.ns.getAugmentationCost(a);
                 let has = augInfo.includes(a);
-                return new Augmentation(a, aRep, aPrc, has);
+                return new Augmentation(a, f, aRep, aPrc, has);
             })
             return new Faction(f, rep, fav, fvg, augs, Faction.gangs().includes(f) ? 'security' : 'hacking');
         });
@@ -261,14 +301,25 @@ class Faction {
 class Augmentation {
     /**
      * @param {string} name
+     * @param {string} fac
      * @param {number} rep
      * @param {number} prc
+     * @param {boolean} has
      */
-    constructor(name, rep, prc, has) {
+    constructor(name, fac, rep, prc, has) {
         this.name = name;
+        this.faction = fac;
         this.requiredReputation = rep;
         this.price = prc;
         this.owned = has;
+    }
+
+    toString() {
+        if (this.owned) {
+            return `${this.name} (OWNED)`
+        } else {
+            return `${this.name} (${format.money(this.price)})`
+        }
     }
 }
 

@@ -124,5 +124,12 @@ declare interface IGame {
      */
     getAugmentationCost(augName: string): [number, number];
 
+    /**
+     * This function will try to purchase the specified Augmentation through the given Faction.
+     * @param factionName Name of faction to purchase Augmentation from. CASE-SENSITIVE
+     * @param augName Name of Augmentation to purchase. CASE-SENSITIVE
+     * @returns This function will return true if the Augmentation is successfully purchased, and false otherwise.
+     */
+    purchaseAugmentation(factionName: string, augName: string): boolean;
     // XXX more
 }
