@@ -1,6 +1,6 @@
 /// <reference path="Singularity.d.ts" />
 import * as format from './lib-format.js';
-import { Program, Gym, programs, gyms, universities  } from './lib-servers.js';
+import { Program, Gym, programs, gyms, universities  } from './lib-world.js';
 import { Logger } from './lib-log.js';
 import { Life, TICK_LENGTH } from './lib-life.js';
 

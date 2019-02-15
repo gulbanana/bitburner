@@ -1,5 +1,5 @@
 import { Logger } from './lib-log.js';
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 import * as format from './lib-format.js';
 
 /** @param {IGame} ns */
@@ -9,7 +9,7 @@ export async function main(ns) {
     let log = new Logger(ns, { termInfo: true });
 
     let targets = [];
-    for (let target of servers.map(ns)) {
+    for (let target of world.map(ns)) {
         let weakenTime = ns.getWeakenTime(target.name);
         let growTime = ns.getGrowTime(target.name);
         let hackTime = ns.getHackTime(target.name);
@@ -47,7 +47,7 @@ export async function main(ns) {
         }
 
         // ignore busy targets
-        for (var bot of servers.bots(ns)) {            
+        for (var bot of world.bots(ns)) {            
             let scripts = ns.ps(bot.name);
             for (let script of scripts) {
                 if (script.filename.startsWith('ms-')) {

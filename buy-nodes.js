@@ -1,5 +1,5 @@
 import { Logger } from './lib-log.js';
-import { programs } from './lib-servers.js';
+import { programs } from './lib-world.js';
 import * as format from './lib-format.js';
 
 /** @param {IGame} ns */

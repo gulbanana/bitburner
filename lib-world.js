@@ -142,6 +142,15 @@ export function all(ns) {
     return bots(ns).concat(map(ns));
 }
 
+export function home(ns) {
+    let h = new Server('home', ns.getServerRam('home')[0], 0);
+    for (let next of ns.scan(h.name)) {
+        h.links.push(next);
+    }
+
+    return h;
+}
+
 export class Program {
     /**
      * @param {number} req

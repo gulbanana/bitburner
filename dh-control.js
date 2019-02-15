@@ -1,14 +1,14 @@
 import { Logger } from './lib-log.js';
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    /** @type {servers.Server[]} */
+    /** @type {world.Server[]} */
     let workerMap = [];
     let log = new Logger(ns, { showInfo: true, showDebug: false, termInfo: false, termDebug: false });
 
     /** 
-     * @param {servers.Server} worker
+     * @param {world.Server} worker
      * @param {string} worker
      */
     async function setJob(worker, job) {
@@ -34,7 +34,7 @@ export async function main(ns) {
     }
 
     /**
-     * @param {servers.Server} worker
+     * @param {world.Server} worker
      */
     function stopJob(worker) {
         if (typeof worker.lock == 'string') {
@@ -45,7 +45,7 @@ export async function main(ns) {
     }
 
     /**
-     * @param {servers.Server} worker
+     * @param {world.Server} worker
      */
     function jobRunning(worker) {
         if (typeof worker.lock == 'string') {
@@ -60,7 +60,7 @@ export async function main(ns) {
      * @param {function(number, number): boolean} f
      */
     function find(job, f) {
-        /** @type {servers.Server} */
+        /** @type {world.Server} */
         let worker = null;
         for (let w of workerMap) {
             if (typeof w.lock == 'undefined' && w.job === job && (worker == null || f(w.ram, worker.ram))) {
@@ -101,7 +101,7 @@ export async function main(ns) {
     if (ns.args.length < 1) log.error('hostname required');
     var target = ns.args[0];
 
-    servers.enrol(ns, target);
+    world.enrol(ns, target);
 
     var targetSecMin = ns.getServerMinSecurityLevel(target);
     var targetSecBase = ns.getServerBaseSecurityLevel(target);
@@ -122,7 +122,7 @@ export async function main(ns) {
     log.info('scan workers...');
     let jobs = ['hack', 'grow', 'weaken'];
 
-    for (let worker of servers.map(ns)) {
+    for (let worker of world.map(ns)) {
         if (worker.canWork(ns)) {            
             for (let job of jobs) {
                 if (ns.isRunning('dh-worker-' + job + '.js', worker.name, target)) {

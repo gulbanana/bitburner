@@ -1,5 +1,5 @@
 import { Logger } from './lib-log.js';
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 import * as format from './lib-format.js';
 
 let MAX_HACK = 0.8;
@@ -10,7 +10,7 @@ export async function main(ns) {
     var log = new Logger(ns, { termInfo: true });
     
     let targets = [];
-    for (let worker of servers.map(ns)) {
+    for (let worker of world.map(ns)) {
         if (worker.canHack(ns)) {
             targets.push(worker);
         }

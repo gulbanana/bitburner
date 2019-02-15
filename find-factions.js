@@ -1,15 +1,15 @@
 import { Logger } from './lib-log.js';
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    let map = servers.map(ns);
+    let map = world.map(ns);
     let log = new Logger(ns, { termInfo: true });
 
     /**
      * @param {string[]} sources
-     * @param {servers.Server} current
-     * @returns {servers.Server[][]}
+     * @param {world.Server} current
+     * @returns {world.Server[][]}
      */
     function paths(sources, current) {
         log.debug("sources:");
@@ -59,11 +59,11 @@ export async function main(ns) {
     }
 
     /**
-     * @param {servers.Server} target
-     * @returns {servers.Server[]}
+     * @param {world.Server} target
+     * @returns {world.Server[]}
      */
     function find(target) {
-        let allPaths = paths([], servers.home(ns));
+        let allPaths = paths([], world.home(ns));
         return allPaths.filter(ps => ps[ps.length-1] == target)[0];
     }
 

@@ -1,11 +1,11 @@
 import { Logger } from './lib-log.js';
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
     let log = new Logger(ns, { termInfo: true });
 
-    for (var bot of servers.bots(ns)) {
+    for (var bot of world.bots(ns)) {
         let idle = true;
         
         let scripts = ns.ps(bot.name);

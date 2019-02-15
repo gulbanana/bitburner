@@ -1,5 +1,5 @@
 import { Logger } from './lib-log.js';
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
@@ -8,7 +8,7 @@ export async function main(ns) {
     var jobs = ['hack', 'grow', 'weaken'];
     var counts = { hack: 0, grow: 0, weaken: 0 };
 
-    for (let worker of servers.map(ns)) {
+    for (let worker of world.map(ns)) {
         if (worker.canWork(ns)) {
             for (var jID in jobs) {
                 var job = jobs[jID];

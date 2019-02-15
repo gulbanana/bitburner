@@ -1,8 +1,8 @@
-import * as servers from './lib-servers.js';
+import * as world from './lib-world.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    servers.enrol(ns, 'foodnstuff');
+    world.enrol(ns, 'foodnstuff');
     while (true) {
         await ns.weaken('foodnstuff');
     }
