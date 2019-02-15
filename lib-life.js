@@ -20,6 +20,7 @@ export class Life {
     async tick() {
         let cash = this.getCash();
         let skill = this.ns.getHackingLevel();
+        let hasBots = this.ns.getPurchasedServers().length > 0;
 
         // in the early game, buy a bunch of Hacknet nodes
         if (cash < HACKNET_BUYS_MAX) {
@@ -43,7 +44,7 @@ export class Life {
         // once a server farm is available, use MS
         } else {
             // precondition: actually buy the servers
-            if (this.ns.getPurchasedServers().length == 0) {
+            if (!hasBots) {
                 await this.runOnce('buy-servers.js');
             }
 
@@ -68,8 +69,10 @@ export class Life {
             await this.ensureRunning('hft.js');
         }
 
-        // use spare ram to farm hacking skill
-        this.ensureRunning('farm-worker.js', true);
+        // use spare ram to farm hacking skill, unless farming it via bots
+        if (!hasBots) {
+            this.ensureRunning('farm-worker.js', true);
+        }
     }
 
     /***************************/
