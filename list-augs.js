@@ -1,12 +1,12 @@
 import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
-import { Faction, Augmentation } from './lib-life.js';
+import { Augmentation, FactionWithAugs } from './lib-life-L3.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
     let log = new Logger(ns, {});
 
-    let facsByRep = Faction.getAllWithAugs(ns)
+    let facsByRep = FactionWithAugs.getAllWithAugs(ns)
         .sort((a, b) => b.reputation - a.reputation);
 
     let facsByName = {};
