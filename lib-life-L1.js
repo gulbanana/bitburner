@@ -5,7 +5,7 @@ import { Program, programs, gyms, universities  } from './lib-world.js';
 import { TICK_LENGTH, LifeL0 } from './lib-life-L0.js';
 
 let WORK_OVERRIDE_TICKS = 10;
-let STAT_GOAL_BASE =      75;
+let STAT_GOAL_BASE =     100;
 let DARKWEB_MIN =     200000;
 let TRAIN_MIN =      5000000;
 
@@ -128,7 +128,7 @@ export class LifeL1 extends LifeL0 {
         if (this.cash >= TRAIN_MIN) {
             let statGoals = {};
             for (let stat of ['strength', 'defense', 'dexterity', 'agility']) {
-                statGoals[stat] = STAT_GOAL_BASE * info.mult[stat] * info.mult[stat + 'Exp'];
+                statGoals[stat] = STAT_GOAL_BASE * info.mult[stat]; // * info.mult[stat + 'Exp']; - reciprocal effect only
                 if (stats[stat] < statGoals[stat]) {
                     this.log.debug(`${stat} ${stats[stat]} < goal ${statGoals[stat]}`);
                     return new WorkItem('train-' + stat, () => {
