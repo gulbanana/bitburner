@@ -3,6 +3,8 @@
         "allowJs": true,
         "checkJs": true,
         "noEmit": true,
+        "noImplicitAny": true,
+        "suppressImplicitAnyIndexErrors": true,
         "lib": [ "es2017" ],
     }
 }

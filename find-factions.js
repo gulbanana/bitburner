@@ -84,4 +84,5 @@ export async function main(ns) {
     findFaction("NiteSec", "avmnite-02h");
     findFaction("The Black Hand", "I.I.I.I");
     findFaction("BitRunners", "run4theh111z");
+    findFaction("Daedalus/Icarus", "The-Cave");
 }

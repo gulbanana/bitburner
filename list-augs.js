@@ -1,15 +1,15 @@
 import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
-import { Faction, Augmentation } from './lib-life-virtual.js';
+import { Faction, Augmentation } from './lib-life.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
     let log = new Logger(ns, {});
 
-    let facsByRep = Faction.getAll(ns)
+    let facsByRep = Faction.getAllWithAugs(ns)
         .sort((a, b) => b.reputation - a.reputation);
 
-    let facsByName = [];
+    let facsByName = {};
     for (let f of facsByRep) {
         facsByName[f.name] = f;
     }
@@ -33,18 +33,17 @@ export async function main(ns) {
     }
 }
 
-/**
- * @param {Augmentation[]} augs 
- */
+/** @param {Augmentation[]} augs */
 function groupAugs(augs) {
     /** @type {{name: string, factions: string[], price: number}[]} */
     let augsWithFacs = [];
     for (let a of augs) {
         if (!augsWithFacs.hasOwnProperty(a.name)) {
-            augsWithFacs[a.name] = {};
-            augsWithFacs[a.name].factions = [];
-            augsWithFacs[a.name].name = a.name;
-            augsWithFacs[a.name].price = a.price;
+            augsWithFacs[a.name] = {
+                factions: [],
+                name: a.name,
+                price: a.price
+            };
             augsWithFacs.push(augsWithFacs[a.name]);
         } 
 

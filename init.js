@@ -1,6 +1,5 @@
 import { Logger } from './lib-log.js';
-import { TICK_LENGTH } from './lib-life.js';
-import { VirtualLife as Life } from './lib-life-virtual.js';
+import { TICK_LENGTH, LifeL3 as Life } from './lib-life.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {

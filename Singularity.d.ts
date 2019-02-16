@@ -83,7 +83,7 @@ declare interface IGame {
     getCompanyFavor(companyName: string): number;
     getCompanyFavorGain(companyName: string): number;
     checkFactionInvitations(): string[];
-    joinFaction(name: string);
+    joinFaction(name: string): void;
     workForFaction(factionName: string, workType: 'hacking' | 'field' | 'security'): number;
     getFactionRep(companyName: string): number;
     getFactionFavor(companyName: string): number;
