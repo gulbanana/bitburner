@@ -15,6 +15,8 @@ export class Life {
         this.ns = ns;
         this.log = log;
         this.lastEval = ns.getHackingLevel();
+        this.beganDH = false;
+        this.beganMS = false;
     }
 
     async tick() {
@@ -30,9 +32,13 @@ export class Life {
         }
 
         // before we can afford a server farm, use DH
-        if (cash < PURCHASED_SERVERS_MIN) {
+        if (!this.beganDH || (cash < PURCHASED_SERVERS_MIN && !this.beganMS)) {
+            if (!this.beganDH) {
+                this.log.info('begin mega-server architecture');
+                this.beganDH = true;
+            }
+
             if (!this.dhRunning()) {
-                this.log.info('begin distributed-hack');
                 if (await this.dhStart()) {
                     this.lastEval = skill;
                 }
@@ -44,6 +50,11 @@ export class Life {
             
         // once a server farm is available, use MS
         } else {
+            if (!this.beganMS) {
+                this.log.info('begin mega-server architecture');
+                this.beganMS = true;
+            }
+
             // precondition: actually buy the servers
             if (!hasBots) {
                 await this.runOnce('buy-servers.js');
@@ -51,12 +62,10 @@ export class Life {
 
             // precondition: shut down DH (also gives time for the server-buy to go through)
             if (this.dhRunning()) {
-                this.log.info('end distributed-hack');
                 await this.dhStop();
             }
 
             if (!this.msRunning()) {
-                this.log.info('begin mega-server');
                 if (await this.msStart()) {
                     this.lastEval = skill;
                 }
