@@ -32,6 +32,7 @@ export class Life {
         // before we can afford a server farm, use DH
         if (cash < PURCHASED_SERVERS_MIN) {
             if (!this.dhRunning()) {
+                this.log.info('begin distributed-hack');
                 if (await this.dhStart()) {
                     this.lastEval = skill;
                 }
@@ -50,10 +51,12 @@ export class Life {
 
             // precondition: shut down DH (also gives time for the server-buy to go through)
             if (this.dhRunning()) {
+                this.log.info('end distributed-hack');
                 await this.dhStop();
             }
 
             if (!this.msRunning()) {
+                this.log.info('begin mega-server');
                 if (await this.msStart()) {
                     this.lastEval = skill;
                 }
@@ -165,7 +168,7 @@ export class Life {
     }
     
     async dhStart() {
-        this.log.info('starting distributed-hack architecture');
+        this.log.debug('starting distributed-hack architecture');
         return await this.ns.exec('dh-eval.js', 'home', 1, 'autostart');
     }
 
@@ -174,7 +177,7 @@ export class Life {
             await this.ensureKilled('dh-control.js');
         }
 
-        this.log.info('stopping distributed-hack architecture');
+        this.log.debug('stopping distributed-hack architecture');
         return await this.ns.exec('dh-stop.js', 'home', 1);
     }
 
@@ -183,12 +186,12 @@ export class Life {
     }
 
     async msStart() {
-        this.log.info('starting mega-server architecture');
+        this.log.debug('starting mega-server architecture');
         return await this.ns.exec('ms-eval.js', 'home', 1, 'autostart');
     }
 
     async msStop() {
-        this.log.info('stopping mega-server architecture');
+        this.log.debug('stopping mega-server architecture');
         return await this.ns.exec('ms-stop.js', 'home', 1);
     }
 }
