@@ -155,7 +155,7 @@ export class VirtualLife extends Life {
         }
         
         // work for factions
-        let factions = this.getFactions(info);
+        let factions = Faction.getAll(this.ns);
         this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
         factions = factions.filter(f => f.reputation < f.maxAugRep());
         this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
@@ -174,7 +174,7 @@ export class VirtualLife extends Life {
         this.log.debug(`max aug cost: ${format.money(maxAugCost)}`);
 
         // augs we don't already have
-        let availableAugs = this.getFactions(info)
+        let availableAugs = Faction.getAll(this.ns)
             .map(f => f.augmentations)
             .reduce((a, b) => a.concat(b), [])
             .filter(a => !a.owned);
@@ -217,26 +217,6 @@ export class VirtualLife extends Life {
         return this.ns.fileExists(program.name, 'home');
     }
 
-    /**
-     * @returns Faction[]
-     * @param {ICharacterInfo} info
-     */
-    getFactions(info) {
-        let augInfo = this.ns.getOwnedAugmentations(true);
-        return info.factions.map(f => 
-        {
-            let rep = this.ns.getFactionRep(f);
-            let fav = this.ns.getFactionFavor(f);
-            let fvg = this.ns.getFactionFavorGain(f);
-            let augs = this.ns.getAugmentationsFromFaction(f).map(a => {
-                let [aRep, aPrc] = this.ns.getAugmentationCost(a);
-                let has = augInfo.includes(a);
-                return new Augmentation(a, f, aRep, aPrc, has);
-            })
-            return new Faction(f, rep, fav, fvg, augs, Faction.gangs().includes(f) ? 'security' : 'hacking');
-        });
-    }
-
     getBestGym() {
         let gs = gyms();
         gs.sort((a, b) => b.price - a.price);
@@ -264,7 +244,7 @@ export class VirtualLife extends Life {
     }
 }
 
-class Faction {
+export class Faction {
     /**
      * @param {string} name
      * @param {number} rep
@@ -296,9 +276,30 @@ class Faction {
     static gangs() {
         return ['Slum Snakes', 'Tetrads'];
     }
+
+    /**
+     * @param {IGame} ns
+     * @returns Faction[]
+     */
+    static getAll(ns) {
+        let info = ns.getCharacterInformation();
+        let augInfo = ns.getOwnedAugmentations(true);
+        return info.factions.map(f => 
+        {
+            let rep = ns.getFactionRep(f);
+            let fav = ns.getFactionFavor(f);
+            let fvg = ns.getFactionFavorGain(f);
+            let augs = ns.getAugmentationsFromFaction(f).map(a => {
+                let [aRep, aPrc] = ns.getAugmentationCost(a);
+                let has = augInfo.includes(a);
+                return new Augmentation(a, f, aRep, aPrc, has);
+            })
+            return new Faction(f, rep, fav, fvg, augs, Faction.gangs().includes(f) ? 'security' : 'hacking');
+        });
+    }
 }
 
-class Augmentation {
+export class Augmentation {
     /**
      * @param {string} name
      * @param {string} fac
