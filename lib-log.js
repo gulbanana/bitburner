@@ -19,6 +19,7 @@ export class Logger {
         }
     }
 
+    /** @param {string} msg */
     error(msg) {
         if (this.showError) {
             this.ns.print('[ERR] ' + msg);
@@ -28,6 +29,7 @@ export class Logger {
         }
     }
 
+    /** @param {string} msg */
     info(msg) {
         if (this.showInfo) {
             this.ns.print('[INF] ' + msg);
@@ -37,6 +39,7 @@ export class Logger {
         }
     }
 
+    /** @param {string} msg */
     debug(msg) {
         if (this.showDebug) {
             this.ns.print('[DBG] ' + msg);

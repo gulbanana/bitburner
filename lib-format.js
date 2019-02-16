@@ -58,6 +58,10 @@ export function inc(a, b) {
     }
 }
 
+/**
+ * @param {number} a
+ * @param {number} b
+ */
 export function change(a, b) {
     let ratio = b > a ? (b/a-1) : (a/b-1);
     return inc(a, b) + decper(ratio);
