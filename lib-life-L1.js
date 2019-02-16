@@ -46,7 +46,7 @@ export class LifeL1 extends LifeL0 {
 
     // fullscreen "work" actions
     tickPerformWork() {
-        if (this.ns.isBusy() || (this.lastWork && this.lastWork.doWork == null)) {
+        if (this.ns.isBusy() || (this.lastWork && this.lastWork.name == 'nothing')) {
             if (this.lastWork && !this.countup) {
                 if (this.lastWork.isRep) {
                     this.ns.stopAction();
