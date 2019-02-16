@@ -34,7 +34,7 @@ export class Life {
         // before we can afford a server farm, use DH
         if (!this.beganDH || (cash < PURCHASED_SERVERS_MIN && !this.beganMS)) {
             if (!this.beganDH) {
-                this.log.info('begin mega-server architecture');
+                this.log.info('begin distributed-hack architecture');
                 this.beganDH = true;
             }
 
