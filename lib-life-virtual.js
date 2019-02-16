@@ -17,6 +17,7 @@ export class VirtualLife extends Life {
     constructor(ns, log) {
         super(ns, log);
         this.lastCash = this.getCash();
+        this.hadProgram = {};
     }
 
     // singularity-only life automation functions
@@ -133,7 +134,13 @@ export class VirtualLife extends Life {
 
         // create programs      
         for (let program of programs()) {
-            if (!this.hasProgram(program) && program.req <= skill)  {
+            if (this.hasProgram(program)) {
+                if (!this.hadProgram[program]) {
+                    this.hadProgram[program] = true;
+                    this.lastEval = 1;
+                }    
+            }
+            else if (program.req <= skill)  {
                 return new WorkItem('program-' + program.name, () => this.ns.createProgram(program.name), false);
             }
         }
