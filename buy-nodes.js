@@ -41,7 +41,7 @@ async function run(ns, log) {
      * @param {number} uncappedCost
      */
     function getCappedCost(name, uncappedCost) {
-        if (uncappedCost > costCap) {
+        if (uncappedCost < Infinity && uncappedCost > costCap) {
             log.debug(`capping ${name} cost at ${format.money(costCap)}`)
             return Infinity;
         } else {
