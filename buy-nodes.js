@@ -62,7 +62,9 @@ async function run(ns, log) {
     while (purchased) {
         purchased = false;
 
+        /** @type {number} */
         let minCost = Math.min.apply(null, costs);
+        /** @type {number} */
         let minIdx = costs.indexOf(minCost);
         
         if (buyNodeCost < minCost) {
