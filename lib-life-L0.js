@@ -223,7 +223,12 @@ export class LifeL0 {
     }
 
     msRunning() {
-        return this.ns.ps('bot0').length > 0;
+        let servers = this.ns.getPurchasedServers();
+        if (servers.length == 0) return false;
+        let server1 = servers[0];
+        let top = this.ns.ps(server1);
+        if (top.length == 0) return false;
+        return top[0].filename.startsWith('ms');
     }
 
     async msStart() {
