@@ -3,7 +3,12 @@
 /** @param {IGame} ns */
 export async function main(ns) {
     var target = ns.args[0];
-    await ns.weaken(target);
+    let multiple = ns.args[1];
+
+    for (let i = 0; i < multiple; i++) {
+        await ns.weaken(target);
+    }
+
     while (ns.scriptRunning('ms-control.js', ns.getHostname())) {
         await ns.sleep(1000);
     }

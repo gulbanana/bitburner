@@ -1,4 +1,5 @@
 import { Logger } from './lib-log.js';
+import * as format from './lib-format.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
@@ -8,56 +9,61 @@ export async function main(ns) {
     // gather info
     let serverRam = ns.getServerRam(ns.getHostname())[0] - ns.getServerRam(ns.getHostname())[1];
     let current = ns.getServerMoneyAvailable(target);
+    let goal = current / 2;
     let max = ns.getServerMaxMoney(target);
     let factor = max / current;
     let minSec = ns.getServerMinSecurityLevel(target);
     let sec = ns.getServerSecurityLevel(target);
+    let maxMultiple = 4;
+
+    /**
+     * @param {string} name
+     * @param {number} threads
+     * @param {(hostname: string) => number} getTime
+     */
+    async function job(name, threads, getTime) {
+        let scriptRam = ns.getScriptRam('ms-worker-' + name + '.js');
+        let reqRam = scriptRam * threads;
+
+        let multiple = 1;
+
+        while (serverRam < reqRam && multiple < maxMultiple) {
+            log.info(`${ns.getHostname()}/${target}: requires ${threads} threads for ${format.time(Math.floor(getTime(target) * multiple))}`);
+            log.info(`${ns.getHostname()}/${target}: using ${format.ram(reqRam)} of ${format.ram(serverRam)}`);
+            if (serverRam < reqRam) {
+                log.info(`${ns.getHostname()}/${target}: ...but that's impossible. try again.`);
+                threads = Math.floor(threads / 2);
+                multiple = multiple * 2;
+                reqRam = scriptRam * threads;
+            }
+        }
+
+        if (serverRam >= reqRam) {
+            await ns.exec('ms-worker-' + name + '.js', ns.getHostname(), threads, target, multiple);
+        } else {
+            log.error(`failed to ${name} ${target} - need at least ${format.ram(reqRam)}, have ${format.ram(serverRam)}`);
+            ns.exit();
+        }
+    }
 
     // phase 1/3: weaken to minimum
     if (sec-1 > minSec) {
         log.info(`${ns.getHostname()}/${target}: weaken by ${sec - minSec}`);
-
         let threads = Math.ceil((sec - minSec) / 0.05);
-        log.info(`${ns.getHostname()}/${target}: requires ${threads} threads for ${Math.floor(ns.getWeakenTime(target))} seconds`);
-
-        let scriptRam = ns.getScriptRam('ms-worker-weaken.js')
-        log.info(`${ns.getHostname()}/${target}: using ${scriptRam * threads}GB of ${serverRam}GB`);
-        
-        await ns.exec('ms-worker-weaken.js', ns.getHostname(), threads, target);
+        await job('weaken', threads, ns.getWeakenTime);
     }
 
     // phase 2: grow to max
     else if (factor > 1) {
         log.info(`${ns.getHostname()}/${target}: grow by factor of ${factor}`);
-
-        let scriptRam = ns.getScriptRam('ms-worker-grow.js');
-        let reqRam = Infinity;
         let threads = Math.ceil(ns.growthAnalyze(target, factor));
-        while (serverRam < reqRam) {
-            reqRam = scriptRam * threads;
-            log.info(`${ns.getHostname()}/${target}: requires ${threads} threads for ${Math.floor(ns.getGrowTime(target))} seconds`);
-            log.info(`${ns.getHostname()}/${target}: using ${reqRam}GB of ${serverRam}GB`);
-            if (serverRam < reqRam) {
-                log.info(`${ns.getHostname()}/${target}: ...but that's impossible. try again.`);
-                threads = Math.floor(threads / 2);
-            }
-        }
-        
-        
-        await ns.exec('ms-worker-grow.js', ns.getHostname(), threads, target);
+        await job('grow', threads, ns.getGrowTime);
     }
     
     // phase 4: steal half
     else {
-        let goal = current / 2;
         log.info(`${ns.getHostname()}/${target}: hack \$${goal}`);
-
         let threads = Math.ceil(ns.hackAnalyzeThreads(target, goal));
-        log.info(`${ns.getHostname()}/${target}: requires ${threads} threads for ${Math.floor(ns.getHackTime(target))} seconds`);
-
-        let scriptRam = ns.getScriptRam('ms-worker-hack.js')
-        log.info(`${ns.getHostname()}/${target}: using ${scriptRam * threads}GB of ${serverRam}GB`);     
-        
-        await ns.exec('ms-worker-hack.js', ns.getHostname(), threads, target);
+        await job('hack', threads, ns.getHackTime);
     }
 }

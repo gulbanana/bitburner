@@ -6,7 +6,7 @@ export async function main(ns) {
     let log = new Logger(ns, {});
     let host = ns.args[0]
 
-    ns.scp(['lib-log.js', 'ms-control.js', 'ms-worker-grow.js', 'ms-worker-weaken.js', 'ms-worker-hack.js',], host);
+    ns.scp(['lib-log.js', 'lib-format.js', 'ms-control.js', 'ms-worker-grow.js', 'ms-worker-weaken.js', 'ms-worker-hack.js',], host);
 
     if (ns.args.length > 1) {
         let target = ns.args[1];
