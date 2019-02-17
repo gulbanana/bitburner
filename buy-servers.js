@@ -13,17 +13,12 @@ export async function main(ns) {
 
     let minRam = 0;
     let maxRam = 0;
-    let processes = [];
 
     if (existingServers.length > 0) {
         for (var existing of existingServers) {
             let ram = ns.getServerRam(existing);
             if (ram[0] > maxRam) maxRam = ram[0];
             if (ram[0] < minRam || minRam == 0) minRam = ram[0];
-            let ps = ns.ps(existing);
-            if (ps.length > 0) {
-                processes.push(existing);
-            }
         }
     }
 
@@ -57,10 +52,26 @@ export async function main(ns) {
     let total = ns.getPurchasedServerCost(ram) * actual;
     log.info(`can buy ${actual} servers, ${format.ram(ram)} each: ${format.money(total)} total`);
 
-    if (!dryRun && processes.length > 0) {
-        log.info('scripts running on existing servers, exit');
-        ns.exit();
-    } else if (ram > minRam || existingServers.length < limit) {
+    if (ram > minRam || existingServers.length < limit) {
+        let processes = [];
+        for (let i = 0; i < existingServers.length && i < limit; i++) {
+            if (ns.getServerRam(existingServers[i])[0] < ram) {
+                let ps = ns.ps(existingServers[i]);
+                if (ps.length > 0) {
+                    processes.push(existingServers[i]);
+                }
+            }
+        }
+
+        if (processes.length > 0) {
+            if (dryRun) {
+                log.info('scripts running on existing servers, continuing dry run');    
+            } else {
+                log.info('scripts running on existing servers, exit');
+                ns.exit();
+            }
+        }
+
         log.info('deleting existing servers...');
         let sold = [];
         for (let i = 0; i < existingServers.length && i < limit; i++) {
@@ -72,6 +83,7 @@ export async function main(ns) {
                 log.debug(`keep ${existingServers[i]}`);
             }
         }
+
         log.info('buying new servers...');
         for (let i = 0; i < limit; i++) {
             if (!ns.serverExists(existingServers[i]) || sold.includes(existingServers[i])) {
