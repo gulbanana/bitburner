@@ -16,8 +16,8 @@ export class LifeL0 {
         this.log = log;
         this.lastEval = ns.getHackingLevel();
         this.lastCash = this.getCash();
-        this.beganDH = false;
-        this.beganMS = false;
+        this.beganMS = this.msRunning();
+        this.beganDH = this.beganMS || this.dhRunning();
 
         // this costs an extra 4.5GB of ram :(
         this.marketAccess = false;
