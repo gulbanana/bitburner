@@ -2,9 +2,9 @@
 import { Logger } from './lib-log.js';
 
 export let TICK_LENGTH =  20; // seconds
+let STOCK_MARKET_MIN =         10000000;
 let HACKNET_BUYS_MAX =      10000000000;
 let PURCHASED_SERVERS_MIN = 22528000000;
-let STOCK_MARKET_MIN =      50000000000;
 
 export class LifeL0 {
     /** 
@@ -18,6 +18,16 @@ export class LifeL0 {
         this.lastCash = this.getCash();
         this.beganDH = false;
         this.beganMS = false;
+
+        // this costs an extra 4.5GB of ram :(
+        this.marketAccess = false;
+        try
+        {
+            let symbols = ns.getStockSymbols();
+            ns.getStockVolatility(symbols[0]);
+            this.marketAccess = true;
+        }
+        catch (error) { }
     }
 
     // singularity functions available with various levels of Source-File 4
@@ -96,7 +106,7 @@ export class LifeL0 {
         }
 
         // assume that everyone with enough to buy stock market access has done so
-        if (this.cash >= STOCK_MARKET_MIN) {
+        if (this.marketAccess && this.cash >= STOCK_MARKET_MIN) {
             await this.ensureRunning('hft.js');
         }
 
