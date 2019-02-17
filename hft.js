@@ -14,6 +14,12 @@ export async function main(ns) {
 
     let lastTime = Date.now();
     let lastAssets = 0;
+    for (let stock of market.getAll(ns)) {
+        lastAssets = lastAssets + stock.position.shares * stock.price;
+    }
+
+    let assetWindow = new SlidingWindow(6);
+    let timeWindow = new SlidingWindow(6);
 
     function tick() {
         let time = Date.now();
@@ -125,22 +131,59 @@ export async function main(ns) {
         }
 
         if (transacted) {
-            log.info(`assets: ${format.money(assets)}, session capital gains: ${format.money(profit)}`);
-            lastTime = time;
             assets = 0;
-            for (let stock of stocks) {
+            for (let stock of market.getAll(ns)) {
                 assets = assets + stock.position.shares * stock.price;
-            }    
-            lastAssets = assets;
+            }
+            log.info(`assets: ${format.money(assets)}, session capital gains: ${format.money(profit)}`);
+            assetWindow.reset();
+            timeWindow.reset();
         } else {
             let assetChange = assets - lastAssets;
             let timeChange = time - lastTime;
-            log.info(`assets: ${format.money(assets)}, ${format.change(lastAssets, assets)}, ${format.money(assetChange/timeChange)}/sec`);
+
+            assetWindow.push(assetChange);
+            timeWindow.push(timeChange);
+
+            log.info(`assets: ${format.money(assets)}, ${format.change(lastAssets, lastAssets + assetWindow.average())}, ${format.money(assetWindow.average()/timeWindow.average())}/sec`);
         }
+
+        lastAssets = assets;
+        lastTime = time;
     }
 
     while (true) {
-        await ns.sleep(4000);
+        await ns.sleep(5000);
         tick();
     }
 } 
+
+class SlidingWindow {
+    /** @param {number} size */
+    constructor(size) {
+        this.size = size;
+        /** @type {number[]} */
+        this.values = [];
+    }
+
+    reset() {
+        this.values = [];
+    }
+
+    /** @param {number} value */
+    push(value) {
+        if (this.values.length < this.size) {
+            this.values.push(value);
+        } else {
+            for (let i = 0; i < this.size-1; i++) {
+                this.values[i] = this.values[i+1];
+            }
+            this.values[this.size-1] = value;
+        }
+    }
+
+    average() {
+        let sum = this.values.reduce((a, b) => a + b, 0);
+        return sum / this.values.length;
+    }
+}
