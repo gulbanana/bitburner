@@ -83,7 +83,9 @@ export class LifeL0 {
                     this.lastEval = this.skill;
                 }
             } else if (this.skill / this.lastEval > 1.1) {
-                if (await this.dhStop() && await this.dhStart()) {
+                await this.dhStop();
+                await this.ns.sleep(10 * 1000);
+                if (await this.dhStart()) {
                     this.lastEval = this.skill;
                 }
             }
@@ -100,7 +102,9 @@ export class LifeL0 {
             }
 
             if (this.skill / this.lastEval > 1.1 || bots > this.lastBots) {
-                if (await this.msStop() && await this.msStart()) {
+                await this.msStop();
+                await this.ns.sleep(10 * 1000);
+                if (await this.msStart()) {
                     this.lastEval = this.skill;
                     this.lastBots = bots;
                 }
