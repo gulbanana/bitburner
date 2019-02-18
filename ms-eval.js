@@ -8,6 +8,10 @@ export async function main(ns) {
     let dryRun = ns.args.includes('dry') || ns.args.includes('dryrun') || ns.args.includes('dry-run');
     let log = new Logger(ns, { termInfo: true });
 
+    if (autostart) {
+        log.info('----- TARGETS -----');
+    }
+
     let targets = [];
     for (let target of world.map(ns)) {
         let weakenTime = ns.getWeakenTime(target.name);
@@ -43,6 +47,7 @@ export async function main(ns) {
     }
 
     if (autostart) {
+        log.info('----- AUTOSTART -----')
         let bots = ns.getPurchasedServers()
             .filter(b => ns.ps(b).length == 0) //ignore busy
             .filter(b => ns.getServerRam(b)[0] >= 16384); // ignore too small
@@ -68,6 +73,7 @@ export async function main(ns) {
         
         for (let i = 0; i < bots.length && i < targets.length; i++) {
             log.debug(`${bots[i]}: ${targets[i].name}`)
+            log.info(`run ms-setup.js ${bots[i]} ${targets[i].name}`)
             await ns.exec('ms-setup.js', ns.getHostname(), 1, bots[i], targets[i].name);
         }
     }

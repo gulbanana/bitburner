@@ -9,6 +9,10 @@ export async function main(ns) {
     let autostart = ns.args.includes('autostart') || ns.args.includes('auto');
     var log = new Logger(ns, { termInfo: true });
     
+    if (autostart) {
+        log.info('----- TARGETS -----');
+    }
+
     let targets = [];
     for (let worker of world.map(ns)) {
         if (worker.canHack(ns)) {
@@ -42,6 +46,8 @@ export async function main(ns) {
     }
 
     if (autostart) {
-        ns.spawn('dh-control.js', 1, targets[0].name);
+        log.info('----- AUTOSTART -----');
+        log.info(`run dh-control.js ${targets[0].name}`)
+        await ns.exec('dh-control.js', ns.getHostname(), 1, targets[0].name);
     }
 }
