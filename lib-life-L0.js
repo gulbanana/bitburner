@@ -2,7 +2,7 @@
 import { Logger } from './lib-log.js';
 
 export let TICK_LENGTH =  20; // seconds
-let STOCK_MARKET_MIN =         10000000;
+let STOCK_MARKET_MIN =        100000000;
 let HACKNET_BUYS_MAX =      10000000000;
 let PURCHASED_SERVERS_MIN = 22528000000;
 
@@ -28,6 +28,7 @@ export class LifeL0 {
             this.marketAccess = true;
         }
         catch (error) { }
+        log.debug('market access: ' + this.marketAccess);
     }
 
     // singularity functions available with various levels of Source-File 4
