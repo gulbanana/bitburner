@@ -4,7 +4,7 @@ import * as format from './lib-format.js';
 /** @param {IGame} ns */
 export async function main(ns) {
     let dryRun = ns.args.includes('dry') || ns.args.includes('dryrun') || ns.args.includes('dry-run');
-    let specify = typeof ns.args[0] === 'number';
+    let specify = typeof ns.args[0] === 'number' || !Number.isNaN(parseInt(ns.args[0]));
     let debug = ns.args.includes('debug');
     let log = new Logger(ns, { termInfo: true, termDebug: debug });
 
@@ -25,10 +25,11 @@ export async function main(ns) {
     log.info(`${existingServers.length} existing servers, min ${format.ram(minRam)} max ${format.ram(maxRam)}`);
 
     let cash = ns.getServerMoneyAvailable("home");
-    let limit = specify ? ns.args[0] : ns.getPurchasedServerLimit();
+    let limit = specify ? parseInt(ns.args[0]) : ns.getPurchasedServerLimit();
 
     let p = 0;
-    for (let power = 0; power < 25; power++) {
+    let maxPurchaseRam = ns.getPurchasedServerMaxRam();
+    for (let power = 0; Math.pow(2, power) <= maxPurchaseRam; power++) {
         let actual = limit;
         for (var existing of existingServers) {
             let existingRam = ns.getServerRam(existing);

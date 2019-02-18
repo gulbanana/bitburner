@@ -43,7 +43,9 @@ export async function main(ns) {
     }
 
     if (autostart) {
-        let bots = ns.getPurchasedServers();
+        let bots = ns.getPurchasedServers()
+            .filter(b => ns.ps(b).length == 0) //ignore busy
+            .filter(b => ns.getServerRam(b)[0] >= 16384); // ignore too small
         
         // ignore busy workers
         var i = bots.length;

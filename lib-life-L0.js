@@ -1,4 +1,5 @@
 /// <reference path="BitBurner.d.ts" />
+import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
 
 export let TICK_LENGTH =  20; // seconds
@@ -16,6 +17,7 @@ export class LifeL0 {
         this.log = log;
         this.lastEval = ns.getHackingLevel();
         this.lastCash = this.getCash();
+        this.lastBots = this.ns.getPurchasedServers().length;
         this.beganMS = this.msRunning();
         this.beganDH = this.beganMS || this.dhRunning();
 
@@ -52,8 +54,6 @@ export class LifeL0 {
     }
 
     async tickManageScripts() {
-        let hasBots = this.ns.getPurchasedServers().length > 0;
-
         // in the early game, buy a bunch of Hacknet nodes
         if (this.cash < HACKNET_BUYS_MAX) {
             await this.ensureRunning('buy-nodes.js');
@@ -61,8 +61,18 @@ export class LifeL0 {
             await this.ensureKilled('buy-nodes.js');
         }
 
+        // once able to buy good enough servers for MS, switch to buying those
+        let reqRAM = 16384;
+        let bots = this.ns.getPurchasedServers().filter(b => this.ns.getServerRam(b)[0] >= reqRAM).length;
+        let botCost = this.ns.getPurchasedServerCost(reqRAM);
+        let botLimit = this.ns.getPurchasedServerLimit();
+        if (this.cash >= botCost && bots < botLimit) {
+            this.log.info(`${bots} ${format.ram(reqRAM)} servers owned; ordering a new one for ${format.money(botCost)}`);
+            await this.ns.exec('buy-servers.js', this.ns.getHostname(), 1, [bots+1])
+        }
+
         // before we can afford a server farm, use DH
-        if (!this.beganDH || (this.cash < PURCHASED_SERVERS_MIN && !this.beganMS)) {
+        if (bots == 0) {
             if (!this.beganDH) {
                 this.log.info('begin distributed-hack architecture');
                 this.beganDH = true;
@@ -80,25 +90,21 @@ export class LifeL0 {
             
         // once a server farm is available, use MS
         } else {
-            if (!this.beganMS) {
+            if (!this.beganMS) { // based on an msRunning check, but only once at init startup
                 this.log.info('begin mega-server architecture');
                 this.beganMS = true;
-            }
-
-            // precondition: actually buy the servers
-            if (!hasBots) {
-                await this.runOnce('buy-servers.js');
-            }
-
-            if (!this.msRunning()) {
                 if (await this.msStart()) {
                     this.lastEval = this.skill;
-                }
-            } else if (this.skill / this.lastEval > 1.1) {
-                if (await this.msStop() && await this.msStart()) {
-                    this.lastEval = this.skill;
+                    this.lastBots = bots;
                 }
             }
+
+            if (this.skill / this.lastEval > 1.1 || bots > this.lastBots) {
+                if (await this.msStop() && await this.msStart()) {
+                    this.lastEval = this.skill;
+                    this.lastBots = bots;
+                }
+            } 
         }
 
         // assume that everyone with enough to buy stock market access has done so
@@ -107,8 +113,10 @@ export class LifeL0 {
         }
 
         // use spare ram to farm hacking skill, unless farming it via bots
-        if (!hasBots) {
+        if (bots == 0) {
             this.ensureRunning('farm-worker.js', true);
+        } else {
+            this.ensureKilled('farm-worker.js');
         }
     }
 
@@ -188,7 +196,7 @@ export class LifeL0 {
 
     /** @param {string} script */
     getMaxThreads(script) {
-        let available = this.getFreeRam() - 32; // keep a bunch for maintenance scripts
+        let available = this.getFreeRam() - 64; // keep a bunch for maintenance scripts
         let cost = this.ns.getScriptRam(script, 'home');
         return Math.floor(available / cost);
     }
@@ -221,7 +229,7 @@ export class LifeL0 {
     msRunning() {
         let servers = this.ns.getPurchasedServers();
         if (servers.length == 0) return false;
-        let server1 = servers[0];
+        let server1 = 'bot0'; // servers[0]; - wrong because it changes
         let top = this.ns.ps(server1);
         if (top.length == 0) return false;
         return top[0].filename.startsWith('ms');
