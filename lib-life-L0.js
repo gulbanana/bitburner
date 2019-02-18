@@ -20,6 +20,7 @@ export class LifeL0 {
         this.lastBots = this.ns.getPurchasedServers().length;
         this.beganMS = this.msRunning();
         this.beganDH = this.beganMS || this.dhRunning();
+        this.beganFarm = false;
 
         // this costs an extra 4.5GB of ram :(
         this.marketAccess = false;
@@ -118,8 +119,9 @@ export class LifeL0 {
 
         // use spare ram to farm hacking skill, unless farming it via bots
         if (bots == 0) {
+            this.beganFarm = true;
             this.ensureRunning('farm-worker.js', true);
-        } else {
+        } else if (this.beganFarm) {
             this.ensureKilled('farm-worker.js');
         }
     }
