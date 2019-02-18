@@ -90,11 +90,6 @@ export class LifeL0 {
                 await this.runOnce('buy-servers.js');
             }
 
-            // precondition: shut down DH (also gives time for the server-buy to go through)
-            if (this.dhRunning()) {
-                await this.dhStop();
-            }
-
             if (!this.msRunning()) {
                 if (await this.msStart()) {
                     this.lastEval = this.skill;

@@ -31,6 +31,13 @@ export async function main(ns) {
         return (b.hackAmount/b.cycleTime) > (a.hackAmount/a.cycleTime) ? 1 : -1;
     });
 
+    let top = ns.ps(ns.getHostname()).filter(p => p.filename == 'dh-control.js');
+    if (top.length > 0) {
+        let excludedTarget = top[0].args[0];
+        log.info(`${excludedTarget.padEnd(20)} ignored - DH victim`);
+        targets.splice(targets.findIndex(t => t.name == excludedTarget), 1);
+    }
+
     for (let target of targets) {
         log.info(`${target.name.padEnd(20)} ${format.money(target.hackAmount / target.cycleTime).padEnd(12)} (${format.money(target.hackAmount)} in ${format.time(target.cycleTime)})`)
     }
