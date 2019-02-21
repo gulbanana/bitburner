@@ -1,5 +1,6 @@
 /// <reference path="BitBurner.d.ts" />
 import * as format from './lib-format.js';
+import { enrol } from './lib-world.js';
 import { Logger } from './lib-log.js';
 
 export let TICK_LENGTH =  20; // seconds
@@ -119,7 +120,10 @@ export class LifeL0 {
 
         // use spare ram to farm hacking skill, unless farming it via bots
         if (bots == 0) {
-            this.beganFarm = true;
+            if (!this.beganFarm) {
+                enrol(this.ns, 'foodnstuff');
+                this.beganFarm = true;
+            }
             this.ensureRunning('farm-worker.js', true);
         } else if (this.beganFarm) {
             this.ensureKilled('farm-worker.js');
