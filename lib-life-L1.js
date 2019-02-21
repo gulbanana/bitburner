@@ -4,10 +4,10 @@ import { Logger } from './lib-log.js';
 import { Program, programs, gyms, universities  } from './lib-world.js';
 import { TICK_LENGTH, LifeL0 } from './lib-life-L0.js';
 
-let WORK_OVERRIDE_TICKS = 10;
-let STAT_GOAL_BASE =     100;
-let DARKWEB_MIN =     200000;
-let TRAIN_MIN =      5000000;
+const WORK_OVERRIDE_TICKS =  9;
+const STAT_GOAL_BASE =     100;
+const DARKWEB_MIN =     200000;
+const TRAIN_MIN =      5000000;
 
 export class LifeL1 extends LifeL0 {
     /** 
@@ -46,7 +46,7 @@ export class LifeL1 extends LifeL0 {
 
     // fullscreen "work" actions
     tickPerformWork() {
-        if (this.ns.isBusy() || (this.lastWork && this.lastWork.name == 'nothing')) {
+        if (this.ns.isBusy() || this.isOutOfWork()) {
             if (this.lastWork && !this.countup) {
                 if (this.lastWork.isRep) {
                     this.ns.stopAction();
@@ -108,7 +108,7 @@ export class LifeL1 extends LifeL0 {
     }
 
     selectWork() {
-        for (let jobF of [this.workWriteCode, this.workTrainCombatStats, this.workForFactions, this.workTrainCharisma]) {
+        for (let jobF of [this.workWriteCode, this.workTrainStats, this.workForCompanies, this.workForFactions]) {
             let job = jobF.bind(this)();
             if (job != null) return job;
         }
@@ -116,25 +116,39 @@ export class LifeL1 extends LifeL0 {
         return new WorkItem('nothing', null, false);
     }
 
+    isOutOfWork() {
+        return this.lastWork && this.lastWork.name == 'nothing';
+    }
+
     /** @returns {WorkItem | null} */
     workWriteCode() {
         return null;
     }
 
-    workTrainCombatStats() {
+    workTrainStats() {
         let info = this.ns.getCharacterInformation();
+        // cha stats are not available for some reason, so make a guess
+        info.mult.charisma = Math.min(info.mult.agility, info.mult.defense, info.mult.dexterity, info.mult.agility); 
+        info.mult.charismaExp = Math.min(info.mult.agilityExp, info.mult.defenseExp, info.mult.dexterityExp, info.mult.agilityExp); 
+
         let stats = this.ns.getStats();
         
         if (this.cash >= TRAIN_MIN) {
             let statGoals = {};
-            for (let stat of ['strength', 'defense', 'dexterity', 'agility']) {
+            for (let stat of ['strength', 'defense', 'dexterity', 'agility', 'charisma']) {
                 statGoals[stat] = STAT_GOAL_BASE * info.mult[stat]; // * info.mult[stat + 'Exp']; - reciprocal effect only
                 if (stats[stat] < statGoals[stat]) {
                     this.log.debug(`${stat} ${stats[stat]} < goal ${statGoals[stat]}`);
                     return new WorkItem('train-' + stat, () => {
-                        let gym = this.getBestGym();
-                        this.ensureCity(info, gym.city);
-                        this.ns.gymWorkout(gym.name, stat);
+                        if (stat == 'charisma') {
+                            let uni = this.getBestUniversity();
+                            this.ensureCity(info, uni.city);
+                            this.ns.universityCourse(uni.name, 'Leadership');            
+                        } else {
+                            let gym = this.getBestGym();
+                            this.ensureCity(info, gym.city);
+                            this.ns.gymWorkout(gym.name, stat);
+                        }
                     }, true);
                 }
             }
@@ -148,17 +162,8 @@ export class LifeL1 extends LifeL0 {
         return null;
     }
 
-    workTrainCharisma() {
-        let info = this.ns.getCharacterInformation();
-
-        if (this.cash >= TRAIN_MIN) {
-            return new WorkItem('university', () => {
-                let uni = this.getBestUniversity();
-                this.ensureCity(info, uni.city);
-                this.ns.universityCourse(uni.name, 'Leadership');
-            }, true);
-        }
-
+    /** @returns {WorkItem | null} */
+    workForCompanies() {
         return null;
     }
 

@@ -30,10 +30,24 @@ declare interface ICharacterInfo {
 }
 
 declare interface ICharacterInfoMultipliers {
-    charisma: number;
-    charismaExp: number;
-
-    // XXX
+    agility: number;
+    agilityExp: number;
+    companyRep: number;
+    crimeMoney: number;
+    crimeSuccess: number;
+    defense: number;
+    defenseExp: number;
+    dexterity: number;
+    dexterityExp: number;
+    factionRep: number;
+    hacking: number;
+    hackingExp: number;
+    strength: number;
+    strengthExp: number;
+    workMoney: number;
+    
+    charisma?: number;
+    charismaExp?: number;
 }
 
 declare type ProgramName = 'BruteSSH.exe' | 'FTPCrack.exe' | 'relaySMTP.exe' | 'HTTPWorm.exe' | 'SQLInject.exe' | 'DeepscanV1.exe' | 'DeepscanV2.exe' | 'ServerProfiler.exe' | 'AutoLink.exe';

@@ -3,10 +3,10 @@ import * as format from './lib-format.js';
 import { enrol } from './lib-world.js';
 import { Logger } from './lib-log.js';
 
-export let TICK_LENGTH =  20; // seconds
-let STOCK_MARKET_MIN =        100000000;
-let HACKNET_BUYS_MAX =      10000000000;
-let PURCHASED_SERVERS_MIN = 22528000000;
+export const TICK_LENGTH =  20; // seconds
+const STOCK_MARKET_MIN =        100000000;
+const HACKNET_BUYS_MAX =      10000000000;
+const PURCHASED_SERVERS_MIN = 22528000000;
 
 export class LifeL0 {
     /** 
@@ -40,6 +40,7 @@ export class LifeL0 {
     tickPerformWork() { }
     tickUpgradeHomeSystem() { }
     tickJoinFactions() { }
+    tickJoinCompanies() { }
 
     async tick() {
         this.cash = this.getCash();
@@ -51,6 +52,7 @@ export class LifeL0 {
         this.tickJoinFactions();
         await this.tickManageScripts();
         this.tickPerformWork();
+        this.tickJoinCompanies();
 
         this.lastCash = this.getCash();
     }
