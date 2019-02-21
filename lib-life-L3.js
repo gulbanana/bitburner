@@ -3,7 +3,7 @@ import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
 import { programs } from './lib-world.js';
 import { WorkItem } from './lib-life-L1.js';
-import { LifeL2, Faction } from './lib-life-L2.js';
+import { LifeL2, Faction, FAVOUR_MAX } from './lib-life-L2.js';
 
 export class LifeL3 extends LifeL2 {
     /** 
@@ -38,8 +38,12 @@ export class LifeL3 extends LifeL2 {
     workForFactions() {
         let factions = FactionWithAugs.getAllWithAugs(this.ns);
         this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
+        
         factions = factions.filter(f => f.reputation < f.maxAugRep());
         this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
+
+        factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
+        this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
 
         if (factions.length > 0) {
             factions.sort((a, b) => a.reputation - b.reputation);

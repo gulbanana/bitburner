@@ -3,7 +3,7 @@ import { Logger } from './lib-log.js';
 import { LifeL1, WorkItem } from './lib-life-L1.js';
 
 const COMPANY_REP_MAX = 200000; // level required for most factions
-const FAVOUR_MAX = 150; // level required for donations
+export const FAVOUR_MAX = 150; // level required for donations
 
 export class LifeL2 extends LifeL1 {
     /** 
@@ -87,6 +87,7 @@ export class LifeL2 extends LifeL1 {
     workForFactions() {
         let factions = Faction.getCurrent(this.ns);
         this.log.debug(`current factions: ${factions.map(f => f.name)}`);
+        
         factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
         this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
 
