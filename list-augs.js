@@ -7,7 +7,7 @@ import { FAVOUR_MAX } from './lib-life-L2.js';
 export async function main(ns) {
     let log = new Logger(ns, {});
 
-    let facsByRep = FactionWithAugs.getAllWithAugs(ns)
+    let facsByRep = FactionWithAugs.getAll(ns)
         .sort((a, b) => b.reputation - a.reputation);
 
     /** @type {{[key: string]: FactionWithAugs}} */

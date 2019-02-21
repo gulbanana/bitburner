@@ -5,6 +5,8 @@ import { programs } from './lib-world.js';
 import { WorkItem } from './lib-life-L1.js';
 import { LifeL2, Faction, FAVOUR_MAX } from './lib-life-L2.js';
 
+const DONATE_AMOUNT = 1000000000000;
+
 export class LifeL3 extends LifeL2 {
     /** 
      * @param {IGame} ns 
@@ -36,14 +38,16 @@ export class LifeL3 extends LifeL2 {
 
     // L3 override which takes augs into account
     workForFactions() {
-        let factions = FactionWithAugs.getAllWithAugs(this.ns);
+        let factions = FactionWithAugs.getAll(this.ns);
         this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
         
         factions = factions.filter(f => f.reputation < f.maxAugRep());
         this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
+        let allReqsMet = factions.length == 0;
 
         factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
         this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
+        let reqsCouldBeMetAfterDonations = factions.length == 0 && !allReqsMet;
 
         if (factions.length > 0) {
             factions.sort((a, b) => a.reputation - b.reputation);
@@ -51,44 +55,65 @@ export class LifeL3 extends LifeL2 {
             return new WorkItem('faction-' + factions[0].name, () => this.ns.workForFaction(factions[0].name, factions[0].job), true);
         }
 
-        // if all factions are maxed out, buy some of their augs
-        this.log.debug(`cash rate: ${format.money(this.cashRate)}/sec`);
-
-        let maxAugCost = this.cashRate * 60 * 60; // an hour's income
-        this.log.debug(`max aug cost: ${format.money(maxAugCost)}`);
-
-        // augs we don't already have
-        let availableAugs = FactionWithAugs.getAllWithAugs(this.ns)
-            .map(f => f.augmentations)
-            .reduce((a, b) => a.concat(b), [])
-            .filter(a => !a.owned);
-
-        // most expensive augs first, because the price doubles each time
-        let affordableAugs = availableAugs
-            .filter(a => a.price <= maxAugCost)
-            .sort((a, b) => b.price - a.price);
-
-        if (affordableAugs.length > 0) {
-            this.log.debug("best affordable aug: " + affordableAugs[0]);
-            if (affordableAugs[0].price > this.cash) {
-                if (this.savingForAug != affordableAugs[0].name) {
-                    this.savingForAug = affordableAugs[0].name;
-                    this.log.info(`saving for aug ${affordableAugs[0]}`);
-                }
-            }
-
-            for (let a of affordableAugs) {
-                if (a.price <= this.cash) {
-                    if (this.ns.purchaseAugmentation(a.faction, a.name)) {
-                        this.log.info(`bought aug ${a}`);
+        if (reqsCouldBeMetAfterDonations && this.cash >= DONATE_AMOUNT) {
+            for (let f of FactionWithAugs.getAll(this.ns)) {
+                if (f.favor >= FAVOUR_MAX && f.maxAugRep() > f.reputation) {
+                    if (this.ns.donateToFaction(f.name, DONATE_AMOUNT)) {
+                        this.log.info(`donated ${format.money(DONATE_AMOUNT)} to faction ${f}`);
                         this.cash = this.getCash();
-                        this.savingForAug = '';
+                        if (this.cash < DONATE_AMOUNT) {
+                            break;
+                        }
                     } else {
-                        this.log.info(`failed to buy aug ${a}`);
+                        this.log.error(`failed to donate to faction ${f}`);
+                        break;
                     }
                 }
             }
-        } 
+
+            allReqsMet = FactionWithAugs.getAll(this.ns).filter(f => f.maxAugRep() > f.reputation).length == 0;
+        }
+
+        // if all factions are maxed out, buy some of their augs
+        if (allReqsMet) {
+            this.log.debug(`cash rate: ${format.money(this.cashRate)}/sec`);
+
+            let maxAugCost = this.cashRate * 60 * 60; // an hour's income
+            this.log.debug(`max aug cost: ${format.money(maxAugCost)}`);
+
+            // augs we don't already have
+            let availableAugs = FactionWithAugs.getAll(this.ns)
+                .map(f => f.augmentations)
+                .reduce((a, b) => a.concat(b), [])
+                .filter(a => !a.owned);
+
+            // most expensive augs first, because the price doubles each time
+            let affordableAugs = availableAugs
+                .filter(a => a.price <= maxAugCost)
+                .sort((a, b) => b.price - a.price);
+
+            if (affordableAugs.length > 0) {
+                this.log.debug("best affordable aug: " + affordableAugs[0]);
+                if (affordableAugs[0].price > this.cash) {
+                    if (this.savingForAug != affordableAugs[0].name) {
+                        this.savingForAug = affordableAugs[0].name;
+                        this.log.info(`saving for aug ${affordableAugs[0]}`);
+                    }
+                }
+
+                for (let a of affordableAugs) {
+                    if (a.price <= this.cash) {
+                        if (this.ns.purchaseAugmentation(a.faction, a.name)) {
+                            this.log.info(`bought aug ${a}`);
+                            this.cash = this.getCash();
+                            this.savingForAug = '';
+                        } else {
+                            this.log.info(`failed to buy aug ${a}`);
+                        }
+                    }
+                }
+            } 
+        }
 
         return null;
     }
@@ -115,12 +140,15 @@ export class FactionWithAugs extends Faction {
             .reduce((a, b) => Math.max(a, b), 0);
     }
 
+    toString() {
+        return this.name;
+    }
 
     /**
      * @param {IGame} ns
      * @returns FactionWithAugs[]
      */
-    static getAllWithAugs(ns) {
+    static getAll(ns) {
         let info = ns.getCharacterInformation();
         let augInfo = ns.getOwnedAugmentations(true);
         return info.factions.map(f => 
