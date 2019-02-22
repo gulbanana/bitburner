@@ -35,7 +35,7 @@ async function run(ns, log) {
         maxProduction = Math.max(maxProduction, ns.hacknet.getNodeStats(i).production)
     }
 
-    let costCap = (maxProduction * 60 * 60 * 24) || Infinity;
+    let costCap = (maxProduction * 60 * 60 * 1) || Infinity;
     /**
      * @param {string} name
      * @param {number} uncappedCost
