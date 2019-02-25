@@ -139,12 +139,20 @@ export class LifeL3 extends LifeL2 {
 
     /** @returns {WorkItem | null} */
     workCommitCrimes() {
+        let info = this.ns.getCharacterInformation();
         let stats = this.ns.getStats();
 
-        for (let gang of Gang.getAll().sort((a, b) => a.requiredKarma - b.requiredKarma)) {
-            if (gang.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength) && 
-                gang.requiredKarma > this.homicides &&
-                (gang.requiredLocation == null || this.cash >= TRAVEL_MIN)) {
+        let gangs = Gang.getAll().filter(g => !info.factions.includes(g.name)).sort((a, b) => a.requiredKarma - b.requiredKarma);
+        this.log.debug(`unjoined gangs: ${gangs}`);
+
+        gangs = gangs.filter(g => g.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength));
+        this.log.debug(`gangs with high enough combat stats: ${gangs}`);
+
+        gangs = gangs.filter(g => g.requiredKarma > this.homicides);
+        this.log.debug(`gangs needing lower karma: ${gangs}`);
+
+        for (let gang of gangs) {
+            if (gang.requiredLocation == null || this.cash >= TRAVEL_MIN) {
                 return new WorkItem('crime-homicide', () => {
                     if (gang.requiredLocation != null) {
                         this.ensureCity(this.ns.getCharacterInformation(), gang.requiredLocation);
@@ -256,6 +264,10 @@ export class Gang {
         this.requiredKarma = requiredKarma;
         this.requiredStats = requiredStats;
         this.requiredLocation = requiredLocation;
+    }
+
+    toString() {
+        return this.name;
     }
 
     static getAll() {
