@@ -23,27 +23,33 @@ export class LifeL2 extends LifeL1 {
         }
     }
 
-    tickJoinFactions() {
+    tickAcceptInvites() {
         for (let invite of this.ns.checkFactionInvitations()) {
-            if (!Faction.cities().includes(invite)) {
+            if (this.shouldAcceptInvite(invite)) {
                 this.log.info(`join faction ${invite}`);
                 this.ns.joinFaction(invite);
             }
         }
     }
 
-    tickJoinCompanies() {
+    /** @param {string} faction */
+    shouldAcceptInvite(faction) {
+        return !Faction.cities().includes(faction);
+    }
+
+    /** @returns {WorkItem | null} */
+    workJoinCompanies() {
         // when we've run out of work to do, take another job
-        if (this.isOutOfWork()) {
-            let companies = Company.getAll(this.ns).filter(c => !c.employed);
-            if (companies.length > 0) {
-                if (this.ns.applyToCompany(companies[0].name, 'software')) {
-                    this.log.info(`now employed by ${companies[0]}`);
-                } else {
-                    this.log.error(`rejected by ${companies[0]}`);
-                }
+        let companies = Company.getAll(this.ns).filter(c => !c.employed);
+        if (companies.length > 0) {
+            if (this.ns.applyToCompany(companies[0].name, 'software')) {
+                this.log.info(`now employed by ${companies[0]}`);
+            } else {
+                this.log.error(`rejected by ${companies[0]}`);
             }
         }
+
+        return null;
     }
 
     /** @returns {WorkItem | null} */

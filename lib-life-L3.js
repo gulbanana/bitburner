@@ -6,6 +6,7 @@ import { WorkItem } from './lib-life-L1.js';
 import { LifeL2, Faction, FAVOUR_MAX } from './lib-life-L2.js';
 
 const DONATE_AMOUNT = 1000000000000;
+const TRAVEL_MIN =           200000;
 
 export class LifeL3 extends LifeL2 {
     /** 
@@ -14,10 +15,28 @@ export class LifeL3 extends LifeL2 {
      */
     constructor(ns, log) {
         super(ns, log);
+        
         /** @type {{[key: string]: boolean}} */
         this.hadProgram = {};
+
         /** @type {string} */
         this.savingForAug = '';
+
+        /** @type {number} */
+        this.homicides = 0;
+        let factions = this.ns.getCharacterInformation().factions;
+        for (let gang of Gang.getAll()) {
+            if (factions.includes(gang.name)) {
+                this.homicides = Math.max(this.homicides, gang.requiredKarma);
+            }
+        }
+
+        this.log.debug(`assumed starting homicides: ${this.homicides}`);
+    }
+
+    /** @param {string} faction */
+    shouldAcceptInvite(faction) {
+        return !Faction.cities().includes(faction) || !FactionWithAugs.get(this.ns, faction).hasAllAugs();
     }
 
     workWriteCode() {
@@ -117,6 +136,27 @@ export class LifeL3 extends LifeL2 {
 
         return null;
     }
+
+    /** @returns {WorkItem | null} */
+    workCommitCrimes() {
+        let stats = this.ns.getStats();
+
+        for (let gang of Gang.getAll().sort((a, b) => a.requiredKarma - b.requiredKarma)) {
+            if (gang.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength) && 
+                gang.requiredKarma > this.homicides &&
+                (gang.requiredLocation == null || this.cash >= TRAVEL_MIN)) {
+                return new WorkItem('crime-homicide', () => {
+                    if (gang.requiredLocation != null) {
+                        this.ensureCity(this.ns.getCharacterInformation(), gang.requiredLocation);
+                    }
+
+                    this.nextTickLength = this.ns.commitCrime('homicide') + 1000;
+                }, false);
+            }
+        }
+
+        return null;
+    }
 }
 
 export class FactionWithAugs extends Faction {
@@ -140,6 +180,12 @@ export class FactionWithAugs extends Faction {
             .reduce((a, b) => Math.max(a, b), 0);
     }
 
+    hasAllAugs() {
+        return this.augmentations
+        .map(a => a.owned)
+        .reduce((a, b) => a && b, true);
+    }
+
     toString() {
         return this.name;
     }
@@ -151,18 +197,25 @@ export class FactionWithAugs extends Faction {
     static getAll(ns) {
         let info = ns.getCharacterInformation();
         let augInfo = ns.getOwnedAugmentations(true);
-        return info.factions.map(f => 
-        {
-            let rep = ns.getFactionRep(f);
-            let fav = ns.getFactionFavor(f);
-            let fvg = ns.getFactionFavorGain(f);
-            let augs = ns.getAugmentationsFromFaction(f).map(a => {
-                let [aRep, aPrc] = ns.getAugmentationCost(a);
-                let has = augInfo.includes(a);
-                return new Augmentation(a, f, aRep, aPrc, has);
-            })
-            return new FactionWithAugs(f, rep, fav, fvg, Faction.gangs().includes(f) ? 'security' : 'hacking', augs);
-        });
+        return info.factions.map(f => FactionWithAugs.get(ns, f));
+    }
+
+    /**
+     * @param {IGame} ns
+     * @param {string} f
+     * @returns FactionWithAugs
+     */
+    static get(ns, f) {
+        let rep = ns.getFactionRep(f);
+        let fav = ns.getFactionFavor(f);
+        let fvg = ns.getFactionFavorGain(f);
+        let augInfo = ns.getOwnedAugmentations(true);
+        let augs = ns.getAugmentationsFromFaction(f).map(a => {
+            let [aRep, aPrc] = ns.getAugmentationCost(a);
+            let has = augInfo.includes(a);
+            return new Augmentation(a, f, aRep, aPrc, has);
+        })
+        return new FactionWithAugs(f, rep, fav, fvg, Faction.gangs().includes(f) ? 'security' : 'hacking', augs);
     }
 }
 
@@ -188,5 +241,31 @@ export class Augmentation {
         } else {
             return `${this.name} (${format.money(this.price)})`
         }
+    }
+}
+
+export class Gang {
+    /**
+     * @param {string} name
+     * @param {number} requiredKarma
+     * @param {number} requiredStats
+     * @param {string|null} requiredLocation
+     */
+    constructor(name, requiredKarma, requiredStats, requiredLocation) {
+        this.name = name;
+        this.requiredKarma = requiredKarma;
+        this.requiredStats = requiredStats;
+        this.requiredLocation = requiredLocation;
+    }
+
+    static getAll() {
+        return [
+            new Gang('Slum Snakes', 9, 30, null),
+            new Gang('Tetrads', 18, 75, 'Chongqing'),
+            new Gang('Speakers for the Dead', 45, 300, null),
+            new Gang('The Dark Army', 45, 300, 'Chongqing'),
+            new Gang('The Syndicate', 90, 200, 'Sector-12'),
+            // no silhouette - special company reqs
+        ];
     }
 }

@@ -2,7 +2,7 @@
 import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
 import { Program, programs, gyms, universities  } from './lib-world.js';
-import { TICK_LENGTH, LifeL0 } from './lib-life-L0.js';
+import { TICK_SECONDS, LifeL0 } from './lib-life-L0.js';
 
 const WORK_OVERRIDE_TICKS =  9;
 const STAT_GOAL_BASE =      90;
@@ -16,6 +16,8 @@ export class LifeL1 extends LifeL0 {
      */
     constructor(ns, log) {
         super(ns, log);
+        /** @type {WorkItem} */
+        this.lastWork = null;
     }
 
     tickDarkwebPurchases() {
@@ -46,7 +48,12 @@ export class LifeL1 extends LifeL0 {
 
     // fullscreen "work" actions
     tickPerformWork() {
-        if (this.ns.isBusy() || this.isOutOfWork()) {
+        // continue automation if:
+        // - we're still doing something, or
+        // - we deliberately didn't do anything, or
+        // - we did something which may have finished early
+        if (this.ns.isBusy() || (this.lastWork && (this.lastWork.name == 'nothing' || this.lastWork.name.startsWith('crime')))) {
+            // has work been selected, and not overridden (countup>0)?
             if (this.lastWork && !this.countup) {
                 if (this.lastWork.isRep) {
                     this.ns.stopAction();
@@ -54,7 +61,8 @@ export class LifeL1 extends LifeL0 {
 
                 let workItem = this.selectWork();
                 
-                if (this.lastWork.name == workItem.name) {
+                // is work actually still ongoing?
+                if (this.ns.isBusy() && this.lastWork.name == workItem.name) {
                     this.log.debug(`continue work ${this.lastWork.name}`);
                     if (this.lastWork.isRep) {
                         if (workItem.doWork != null) {
@@ -86,20 +94,20 @@ export class LifeL1 extends LifeL0 {
                 if (!this.lastWork) {
                     /** @type {number | undefined} */
                     this.countup = 0;
-                    this.log.info(`overriden work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                    this.log.info(`overriden work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_SECONDS)}`);
                     this.lastWork = new WorkItem('override', null, false);
                 } else {
                     this.countup = this.countup || 0;
                     if (this.countup == 0) {
-                        this.log.info(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                        this.log.info(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_SECONDS)}`);
                     } else {
-                        this.log.debug(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_LENGTH)}`);
+                        this.log.debug(`automated work cancelled by player, pause ${format.time((WORK_OVERRIDE_TICKS - this.countup) * TICK_SECONDS)}`);
                     }
                 }
                 
                 this.countup = this.countup + 1;
                 if (this.countup >= WORK_OVERRIDE_TICKS) {
-                    this.log.info(`resume automated work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_LENGTH)}`);
+                    this.log.info(`resume automated work, having waited ${format.time(WORK_OVERRIDE_TICKS * TICK_SECONDS)}`);
                     this.countup = 0;
                     this.lastWork = null;
                 }
@@ -108,16 +116,12 @@ export class LifeL1 extends LifeL0 {
     }
 
     selectWork() {
-        for (let jobF of [this.workWriteCode, this.workTrainStats, this.workForCompanies, this.workForFactions]) {
+        for (let jobF of [this.workWriteCode, this.workTrainStats, this.workCommitCrimes, this.workForFactions, this.workForCompanies, this.workJoinCompanies]) {
             let job = jobF.bind(this)();
             if (job != null) return job;
         }
 
         return new WorkItem('nothing', null, false);
-    }
-
-    isOutOfWork() {
-        return this.lastWork && this.lastWork.name == 'nothing';
     }
 
     /** @returns {WorkItem | null} */
@@ -167,6 +171,16 @@ export class LifeL1 extends LifeL0 {
         return null;
     }
 
+    /** @returns {WorkItem | null} */
+    workCommitCrimes() {
+        return null;
+    }
+
+    /** @returns {WorkItem | null} */
+    workJoinCompanies() {
+        return null;
+    }
+    
     getBestGym() {
         let gs = gyms();
         gs.sort((a, b) => b.price - a.price);

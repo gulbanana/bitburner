@@ -3,10 +3,11 @@ import * as format from './lib-format.js';
 import { enrol } from './lib-world.js';
 import { Logger } from './lib-log.js';
 
-export const TICK_LENGTH =  20; // seconds
-const STOCK_MARKET_MIN =        100000000;
-const HACKNET_BUYS_MAX =      10000000000;
-const PURCHASED_SERVERS_MIN = 22528000000;
+export const TICK_SECONDS =             20;
+const STOCK_MARKET_MIN =         100000000;
+const HACKNET_BUYS_MAX =       10000000000;
+const PURCHASED_SERVER_PRICE = 22528000000;
+const PURCHASED_SERVER_RAM =         16384;
 
 export class LifeL0 {
     /** 
@@ -18,7 +19,7 @@ export class LifeL0 {
         this.log = log;
         this.lastEval = ns.getHackingLevel();
         this.lastCash = this.getCash();
-        this.lastBots = this.ns.getPurchasedServers().length;
+        this.lastBots = this.ns.getPurchasedServers().filter(b => this.ns.getServerRam(b)[0] >= PURCHASED_SERVER_RAM).length;
         this.beganMS = this.msRunning();
         this.beganDH = this.beganMS || this.dhRunning();
         this.beganFarm = false;
@@ -39,22 +40,23 @@ export class LifeL0 {
     tickDarkwebPurchases() { }
     tickPerformWork() { }
     tickUpgradeHomeSystem() { }
+    tickAcceptInvites() { }
     tickJoinFactions() { }
-    tickJoinCompanies() { }
 
     async tick() {
+        this.nextTickLength = TICK_SECONDS * 1000;
         this.cash = this.getCash();
-        this.cashRate = (this.cash - this.lastCash) / TICK_LENGTH;
+        this.cashRate = (this.cash - this.lastCash) / TICK_SECONDS;
         this.skill = this.ns.getHackingLevel();
 
         this.tickDarkwebPurchases();
         this.tickUpgradeHomeSystem();
-        this.tickJoinFactions();
+        this.tickAcceptInvites();
         await this.tickManageScripts();
         this.tickPerformWork();
-        this.tickJoinCompanies();
 
         this.lastCash = this.getCash();
+        return this.nextTickLength;
     }
 
     async tickManageScripts() {
@@ -66,12 +68,11 @@ export class LifeL0 {
         }
 
         // once able to buy good enough servers for MS, switch to buying those
-        let reqRAM = 16384;
-        let bots = this.ns.getPurchasedServers().filter(b => this.ns.getServerRam(b)[0] >= reqRAM).length;
-        let botCost = this.ns.getPurchasedServerCost(reqRAM);
+        let bots = this.ns.getPurchasedServers().filter(b => this.ns.getServerRam(b)[0] >= PURCHASED_SERVER_RAM).length;
+        let botCost = this.ns.getPurchasedServerCost(PURCHASED_SERVER_RAM);
         let botLimit = this.ns.getPurchasedServerLimit();
         if (this.cash >= botCost && bots < botLimit) {
-            this.log.info(`${bots} ${format.ram(reqRAM)} servers owned; ordering a new one for ${format.money(botCost)}`);
+            this.log.info(`${bots} ${format.ram(PURCHASED_SERVER_RAM)} servers owned; ordering a new one for ${format.money(botCost)}`);
             await this.ns.exec('buy-servers.js', this.ns.getHostname(), 1, [bots+1])
         }
 
