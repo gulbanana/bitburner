@@ -11,6 +11,7 @@ export class Server {
         this.ports = ports;
         this.lock = lock;
         this.job = '';
+        /** @type {string[]} */
         this.links = [];
     }
 
@@ -142,6 +143,7 @@ export function all(ns) {
     return bots(ns).concat(map(ns));
 }
 
+/** @param {IGame} ns */
 export function home(ns) {
     let h = new Server('home', ns.getServerRam('home')[0], 0);
     for (let next of ns.scan(h.name)) {
