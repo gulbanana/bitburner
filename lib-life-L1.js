@@ -153,7 +153,7 @@ export class LifeL1 extends LifeL0 {
                             this.ensureCity(info, gym.city);
                             this.ns.gymWorkout(gym.name, stat);
                         }
-                    }, true);
+                    }, false);
                 }
             }
         }
