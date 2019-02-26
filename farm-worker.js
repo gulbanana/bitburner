@@ -1,9 +1,10 @@
-import * as world from './lib-world.js';
+/// <reference path="BitBurner.d.ts" />
 
 /** @param {IGame} ns */
 export async function main(ns) {
-    world.enrol(ns, 'foodnstuff');
+    let target = ns.args.length == 0 ? 'foodnstuff' : ns.args[0];
+
     while (true) {
-        await ns.weaken('foodnstuff');
+        await ns.weaken(target);
     }
 }

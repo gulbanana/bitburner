@@ -123,11 +123,20 @@ export class LifeL0 {
 
         // use spare ram to farm hacking skill, unless farming it via bots
         if (bots == 0) {
+            let target = 'foodnstuff';
+
+            if (this.ns.scriptRunning('dh-control.js', this.ns.getHostname())) {
+                let top = this.ns.ps(this.ns.getHostname());
+                let p = top.find(p => p.filename == 'dh-control.js');
+                target = p.args[0];
+            }
+            
             if (!this.beganFarm) {
-                enrol(this.ns, 'foodnstuff');
+                enrol(this.ns, target);
                 this.beganFarm = true;
             }
-            this.ensureRunning('farm-worker.js', true);
+            
+            this.ensureRunning1('farm-worker.js', target, true);
         } else if (this.beganFarm) {
             this.ensureKilled('farm-worker.js');
         }
@@ -162,6 +171,37 @@ export class LifeL0 {
             if (p.threads != threads) {
                 await this.ensureKilled(script);
                 await this.ensureRunning(script, maxThreads);
+            }
+        }
+    }
+
+    /**
+     * @param {string} script
+     * @param {boolean} [maxThreads]
+     * @param {string} arg
+     */
+    async ensureRunning1(script, arg, maxThreads) {
+        let threads = 1;
+        if (maxThreads) {
+            threads = this.getMaxThreads(script);
+            if (threads <= 0) return;
+        }
+
+        if (!this.ns.isRunning(script, 'home', arg)) {
+            let threads = 1;
+            if (maxThreads) {
+                threads = this.getMaxThreads(script);
+            }
+    
+            await this.ns.exec(script, 'home', threads, arg);
+            this.log.info(`started ${script} (${threads} threads)`);
+        } else {
+            let top = this.ns.ps('home');
+            let p = top.find(s => s.filename == script && s.args[0] == arg);
+                
+            if (!p || p.threads != threads) {
+                await this.ensureKilled(script);
+                await this.ensureRunning1(script, arg, maxThreads);
             }
         }
     }
@@ -261,7 +301,7 @@ export class LifeL0 {
     /**********/
     /* policy */
     /**********/
-    
+
     shouldBuyNodes() {
         return this.cash <= HACKNET_BUYS_MAX;
     }
