@@ -74,7 +74,7 @@ export async function main(ns) {
     function findFaction(name, host) {
         let path = '';
         for (let p of find(map[host])) {
-            path = path + ' -> ' + p.name;
+            path = `${path}; connect ${p.name}`;
         }
 
         log.info(`${name}: ${path}`);
