@@ -206,6 +206,14 @@ export class LifeL1 extends LifeL0 {
             }
         }
     }
+
+    /**********/
+    /* policy */
+    /**********/
+
+    shouldBuyNodes() {
+        return this.ns.getCharacterInformation().bitnode != 4;
+    }
 }
 
 export class WorkItem {

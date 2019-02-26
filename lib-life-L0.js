@@ -61,9 +61,9 @@ export class LifeL0 {
 
     async tickManageScripts() {
         // in the early game, buy a bunch of Hacknet nodes
-        if (this.cash < HACKNET_BUYS_MAX) {
+        if (this.shouldBuyNodes()) {
             await this.ensureRunning('buy-nodes.js');
-        } else if (this.cash >= HACKNET_BUYS_MAX) {
+        } else {
             await this.ensureKilled('buy-nodes.js');
         }
 
@@ -256,5 +256,13 @@ export class LifeL0 {
     async msStop() {
         this.log.debug('stopping mega-server architecture');
         return await this.ns.exec('ms-stop.js', 'home', 1);
+    }
+    
+    /**********/
+    /* policy */
+    /**********/
+    
+    shouldBuyNodes() {
+        return this.cash <= HACKNET_BUYS_MAX;
     }
 }
