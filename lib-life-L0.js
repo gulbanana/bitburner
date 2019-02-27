@@ -44,10 +44,10 @@ export class LifeL0 {
     tickJoinFactions() { }
 
     async tick() {
-        this.nextTickLength = TICK_SECONDS * 1000;
-        this.cash = this.getCash();
-        this.cashRate = (this.cash - this.lastCash) / TICK_SECONDS;
         this.skill = this.ns.getHackingLevel();
+        this.cash = this.getCash();
+        this.cashRate = (this.cash - this.lastCash) / (this.nextTickLength / 1000);
+        this.nextTickLength = TICK_SECONDS * 1000;
 
         this.tickDarkwebPurchases();
         this.tickUpgradeHomeSystem();
@@ -107,6 +107,13 @@ export class LifeL0 {
             }
 
             if (this.skill / this.lastEval > 1.1 || bots > this.lastBots) {
+                if (this.skill / this.lastEval > 1.1) {
+                    this.log.debug(`skill ${this.skill} / lastEval ${this.lastEval} > 1.1`);
+                }
+                if (bots > this.lastBots) {
+                    this.log.debug(`bots ${bots} > lastBots ${this.lastBots}`);
+                }
+
                 await this.msStop();
                 await this.ns.sleep(10 * 1000);
                 if (await this.msStart()) {

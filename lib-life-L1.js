@@ -131,9 +131,7 @@ export class LifeL1 extends LifeL0 {
 
     workTrainStats() {
         let info = this.ns.getCharacterInformation();
-        // cha stats are not available for some reason, so make a guess
-        info.mult.charisma = Math.min(info.mult.agility, info.mult.defense, info.mult.dexterity, info.mult.agility); 
-        info.mult.charismaExp = Math.min(info.mult.agilityExp, info.mult.defenseExp, info.mult.dexterityExp, info.mult.agilityExp); 
+        this.guessCharismaMult(info.mult);
 
         let stats = this.ns.getStats();
         
@@ -141,6 +139,7 @@ export class LifeL1 extends LifeL0 {
             let statGoals = {};
             for (let stat of ['strength', 'defense', 'dexterity', 'agility', 'charisma']) {
                 statGoals[stat] = STAT_GOAL_BASE * info.mult[stat]; // * info.mult[stat + 'Exp']; - reciprocal effect only
+                
                 if (stats[stat] < statGoals[stat]) {
                     this.log.debug(`${stat} ${stats[stat]} < goal ${statGoals[stat]}`);
                     return new WorkItem('train-' + stat, () => {
@@ -156,9 +155,16 @@ export class LifeL1 extends LifeL0 {
                     }, false);
                 }
             }
+            this.log.debug(`stat goals reached - ${JSON.stringify(statGoals)}`);
         }
 
         return null;
+    }
+
+    /** @param {ICharacterInfoMultipliers} mult */
+    guessCharismaMult(mult) {
+        mult.charisma = Math.min(mult.agility, mult.defense, mult.dexterity, mult.agility);
+        mult.charismaExp = Math.min(mult.agilityExp, mult.defenseExp, mult.dexterityExp, mult.agilityExp);
     }
 
     /** @returns {WorkItem | null} */

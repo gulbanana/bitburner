@@ -18,6 +18,10 @@ export class LifeL3 extends LifeL2 {
         
         /** @type {{[key: string]: boolean}} */
         this.hadProgram = {};
+        for (let program of programs())
+        {
+            this.hadProgram[program.name] = true;
+        }
 
         /** @type {string} */
         this.savingForAug = '';
@@ -145,12 +149,16 @@ export class LifeL3 extends LifeL2 {
         let gangs = Gang.getAll().filter(g => !info.factions.includes(g.name)).sort((a, b) => a.requiredKarma - b.requiredKarma);
         this.log.debug(`unjoined gangs: ${gangs}`);
 
-        gangs = gangs.filter(g => g.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength));
-        this.log.debug(`gangs with high enough combat stats: ${gangs}`);
+        if (gangs.length > 0) {
+            gangs = gangs.filter(g => g.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength));
+            this.log.debug(`gangs with high enough combat stats: ${gangs}`);
+        }
 
-        gangs = gangs.filter(g => g.requiredKarma > this.homicides);
-        this.log.debug(`gangs needing lower karma: ${gangs}`);
-
+        if (gangs.length > 0) {
+            gangs = gangs.filter(g => g.requiredKarma > this.homicides);
+            this.log.debug(`gangs needing lower karma: ${gangs}`);
+        }
+        
         for (let gang of gangs) {
             if (gang.requiredLocation == null || this.cash >= TRAVEL_MIN) {
                 return new WorkItem('crime-homicide', () => {
@@ -164,6 +172,44 @@ export class LifeL3 extends LifeL2 {
         }
 
         return null;
+    }
+
+    /** @param {ICharacterInfoMultipliers} mult */
+    guessCharismaMult(mult) {
+        // start with SF1-1
+        let stat = 1.16; 
+        let statExp = 1.16;
+
+        let augs = this.ns.getOwnedAugmentations();        
+        if (augs.includes("NeuroFlux Governor")) {
+            let level = augs.length / 2; // XXX 
+            for (let i = 0; i < level; i++) {
+                stat = stat * 1.01;
+                statExp = statExp * 1.01;
+            }
+        }
+        if (augs.includes("FocusWire")) { 
+            statExp = statExp * 1.05;
+        }
+        if (augs.includes("Neurotrainer I")) { 
+            statExp = statExp * 1.1;
+        }
+        if (augs.includes("Neurotrainer II")) { 
+            statExp = statExp * 1.15;
+        }
+        if (augs.includes("Power Recirculation Core")) { 
+            stat = stat * 1.05;
+            statExp = statExp * 1.1;
+        }
+        if (augs.includes("Speech Enhancement")) { 
+            stat = stat * 1.1;
+        }
+        if (augs.includes("Speech Processor Implant")) { 
+            stat = stat * 1.2;
+        }
+
+        mult.charisma = stat;
+        mult.charismaExp = statExp;
     }
 }
 
