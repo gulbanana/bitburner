@@ -143,6 +143,10 @@ export class LifeL3 extends LifeL2 {
 
     /** @returns {WorkItem | null} */
     workCommitCrimes() {
+        if (!this.shouldCommitCrimes()) {
+            return null;
+        }
+
         let info = this.ns.getCharacterInformation();
         let stats = this.ns.getStats();
 

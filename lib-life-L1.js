@@ -220,6 +220,10 @@ export class LifeL1 extends LifeL0 {
     shouldBuyNodes() {
         return this.ns.getCharacterInformation().bitnode != 4;
     }
+
+    shouldCommitCrimes() {
+        return this.cash >= TRAIN_MIN;
+    }
 }
 
 export class WorkItem {
