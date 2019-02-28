@@ -136,6 +136,10 @@ export class LifeL0 {
                 let top = this.ns.ps(this.ns.getHostname());
                 let p = top.find(p => p.filename == 'dh-control.js');
                 target = p.args[0];
+            } else if (this.ns.scriptRunning('farm-worker.js', this.ns.getHostname())) {
+                let top = this.ns.ps(this.ns.getHostname());
+                let p = top.find(p => p.filename == 'farm-worker.js');
+                target = p.args[0];
             }
             
             if (!this.beganFarm) {
