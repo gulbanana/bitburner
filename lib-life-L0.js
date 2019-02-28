@@ -128,8 +128,8 @@ export class LifeL0 {
             await this.ensureRunning('hft.js');
         }
 
-        // use spare ram to farm hacking skill, unless farming it via bots
-        if (bots == 0) {
+        // use spare ram to farm hacking skill
+        if (this.shouldFarm()) {
             let target = 'foodnstuff';
 
             if (this.ns.scriptRunning('dh-control.js', this.ns.getHostname())) {
@@ -143,7 +143,7 @@ export class LifeL0 {
                 this.beganFarm = true;
             }
             
-            this.ensureRunning1('farm-worker.js', target, true);
+            this.ensureRunningWithArg('farm-worker.js', target, true);
         } else if (this.beganFarm) {
             this.ensureKilled('farm-worker.js');
         }
@@ -155,60 +155,35 @@ export class LifeL0 {
 
     /**
      * @param {string} script
-     * @param {boolean} [maxThreads=false]
      */
-    async ensureRunning(script, maxThreads) {
-        let threads = 1;
-        if (maxThreads) {
-            threads = this.getMaxThreads(script);
-            if (threads <= 0) return;
-        }
-
-        if (!this.ns.scriptRunning(script, 'home')) {
-            let threads = 1;
-            if (maxThreads) {
-                threads = this.getMaxThreads(script);
-            }
-    
-            await this.ns.exec(script, 'home', threads);
-            this.log.info(`started ${script} (${threads} threads)`);
-        } else {
-            let top = this.ns.ps('home');
-            let p = top.find(s => s.filename == script);
-            if (p.threads != threads) {
-                await this.ensureKilled(script);
-                await this.ensureRunning(script, maxThreads);
-            }
+    async ensureRunning(script) {
+        if (!this.ns.scriptRunning(script, this.ns.getHostname())) {    
+            await this.ns.exec(script, this.ns.getHostname(), 1);
+            this.log.info(`run ${script} -t ${1}`);
         }
     }
 
     /**
      * @param {string} script
-     * @param {boolean} [maxThreads]
      * @param {string} arg
+     * @param {boolean} [maxThreads]
      */
-    async ensureRunning1(script, arg, maxThreads) {
-        let threads = 1;
-        if (maxThreads) {
-            threads = this.getMaxThreads(script);
-            if (threads <= 0) return;
-        }
-
-        if (!this.ns.isRunning(script, 'home', arg)) {
-            let threads = 1;
-            if (maxThreads) {
-                threads = this.getMaxThreads(script);
-            }
-    
-            await this.ns.exec(script, 'home', threads, arg);
-            this.log.info(`started ${script} (${threads} threads)`);
-        } else {
-            let top = this.ns.ps('home');
-            let p = top.find(s => s.filename == script && s.args[0] == arg);
-                
-            if (!p || p.threads != threads) {
+    async ensureRunningWithArg(script, arg, maxThreads) {
+        if (!this.ns.isRunning(script, this.ns.getHostname(), arg)) {   
+            // not running with right arg
+            if (this.ns.scriptRunning(script, this.ns.getHostname())) { 
+                // running with wrong arg
                 await this.ensureKilled(script);
-                await this.ensureRunning1(script, arg, maxThreads);
+            } else {
+                // not running at all
+                let threads = 1;
+                if (maxThreads) {
+                    threads = this.getMaxThreads(script);
+                    if (threads <= 0) return;
+                }
+        
+                await this.ns.exec(script, this.ns.getHostname(), threads, arg);
+                this.log.info(`run ${script} -t ${threads} ${arg}`);
             }
         }
     }
@@ -311,5 +286,9 @@ export class LifeL0 {
 
     shouldBuyNodes() {
         return this.cash <= HACKNET_BUYS_MAX;
+    }
+
+    shouldFarm() {
+        return true;
     }
 }
