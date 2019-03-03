@@ -50,7 +50,8 @@ export async function main(ns) {
         log.info('----- AUTOSTART -----')
         let bots = ns.getPurchasedServers()
             .filter(b => ns.ps(b).length == 0) //ignore busy
-            .filter(b => ns.getServerRam(b)[0] >= 16384); // ignore too small
+            .filter(b => ns.getServerRam(b)[0] >= 16384) // ignore too small
+            .sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
         
         // ignore busy workers
         var i = bots.length;
