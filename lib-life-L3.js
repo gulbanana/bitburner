@@ -254,7 +254,6 @@ export class FactionWithAugs extends Faction {
      */
     static getAll(ns) {
         let info = ns.getCharacterInformation();
-        let augInfo = ns.getOwnedAugmentations(true);
         return info.factions.map(f => FactionWithAugs.get(ns, f));
     }
 
