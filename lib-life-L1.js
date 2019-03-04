@@ -5,7 +5,7 @@ import { Program, programs, gyms, universities  } from './lib-world.js';
 import { TICK_SECONDS, LifeL0 } from './lib-life-L0.js';
 
 const WORK_OVERRIDE_TICKS =  9;
-const STAT_GOAL_BASE =     100;
+const STAT_GOAL_BASE =      90;
 const DARKWEB_MIN =     200000;
 const TRAIN_MIN =      5000000;
 
