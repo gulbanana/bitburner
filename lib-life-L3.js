@@ -211,6 +211,14 @@ export class LifeL3 extends LifeL2 {
         if (augs.includes("Speech Processor Implant")) { 
             stat = stat * 1.2;
         }
+        if (augs.includes("Enhanced Social Interaction Implant")) {
+            stat = stat * 1.6;
+            statExp = statExp * 1.6;
+        }
+        if (augs.includes("SmartJaw")) {
+            stat = stat * 1.5;
+            statExp = statExp * 1.5;
+        }
 
         mult.charisma = stat;
         mult.charismaExp = statExp;
