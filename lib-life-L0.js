@@ -115,7 +115,7 @@ export class LifeL0 {
                 }
 
                 await this.msStop();
-                await this.ns.sleep(10 * 1000);
+                await this.ns.sleep(20 * 1000);
                 if (await this.msStart()) {
                     this.lastEval = this.skill;
                     this.lastBots = bots;
