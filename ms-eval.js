@@ -8,6 +8,11 @@ export async function main(ns) {
     let dryRun = ns.args.includes('dry') || ns.args.includes('dryrun') || ns.args.includes('dry-run');
     let log = new Logger(ns, { termInfo: true });
 
+    function getFreeRam() {
+        let ram = ns.getServerRam(ns.getHostname())
+        return ram[0] - ram[1];
+    }
+
     if (autostart) {
         log.info('----- TARGETS -----');
     }
@@ -48,6 +53,12 @@ export async function main(ns) {
 
     if (autostart) {
         log.info('----- AUTOSTART -----')
+
+        let req = ns.getScriptRam('ms-setup.js');
+        if (getFreeRam() < req) {
+            log.error('insufficient ram to run ms-setup.js');
+        }
+
         let bots = ns.getPurchasedServers()
             .filter(b => ns.ps(b).length == 0) //ignore busy
             .filter(b => ns.getServerRam(b)[0] >= 16384) // ignore too small
@@ -76,6 +87,10 @@ export async function main(ns) {
             log.debug(`${bots[i]}: ${targets[i].name}`)
             log.info(`run ms-setup.js ${bots[i]} ${targets[i].name}`)
             await ns.exec('ms-setup.js', ns.getHostname(), 1, bots[i], targets[i].name);
+
+            while (getFreeRam() < req) {
+                await ns.sleep(1 * 1000);
+            }
         }
     }
 }
