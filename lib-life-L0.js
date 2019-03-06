@@ -236,7 +236,7 @@ export class LifeL0 {
 
     /** @param {string} script */
     getMaxThreads(script) {
-        let available = this.getFreeRam() - 64; // keep a bunch for maintenance scripts
+        let available = this.getFreeRam() - this.spareRamNeeded(); // keep a bunch for maintenance scripts
         let cost = this.ns.getScriptRam(script, 'home');
         return Math.floor(available / cost);
     }
@@ -295,5 +295,9 @@ export class LifeL0 {
 
     shouldFarm() {
         return true;
+    }
+
+    spareRamNeeded() {
+        return 128;
     }
 }
