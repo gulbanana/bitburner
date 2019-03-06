@@ -1,6 +1,8 @@
 import { Logger } from './lib-log.js';
 import * as format from './lib-format.js';
 
+const LARGEST_USEFUL_SERVER = 16384;
+
 /** @param {IGame} ns */
 export async function main(ns) {
     let dryRun = ns.args.includes('dry') || ns.args.includes('dryrun') || ns.args.includes('dry-run');
@@ -28,7 +30,7 @@ export async function main(ns) {
     let limit = specify ? parseInt(ns.args[0]) : ns.getPurchasedServerLimit();
 
     let p = 0;
-    let maxPurchaseRam = ns.getPurchasedServerMaxRam();
+    let maxPurchaseRam = Math.min(ns.getPurchasedServerMaxRam(), LARGEST_USEFUL_SERVER);
     for (let power = 0; Math.pow(2, power) <= maxPurchaseRam; power++) {
         let actual = limit;
         for (var existing of existingServers) {
