@@ -109,13 +109,14 @@ export class LifeL0 {
             if (this.skill / this.lastEval > 1.1 || bots > this.lastBots) {
                 if (this.skill / this.lastEval > 1.1) {
                     this.log.debug(`skill ${this.skill} / lastEval ${this.lastEval} > 1.1`);
+                    await this.msStop();
+                    await this.ns.sleep(10 * 1000);    
                 }
+                
                 if (bots > this.lastBots) {
                     this.log.debug(`bots ${bots} > lastBots ${this.lastBots}`);
                 }
 
-                await this.msStop();
-                await this.ns.sleep(20 * 1000);
                 if (await this.msStart()) {
                     this.lastEval = this.skill;
                     this.lastBots = bots;
