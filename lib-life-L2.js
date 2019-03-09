@@ -2,8 +2,9 @@
 import { Logger } from './lib-log.js';
 import { LifeL1, WorkItem } from './lib-life-L1.js';
 
-const COMPANY_REP_MAX = 200000; // level required for most factions
-export const FAVOUR_MAX = 150; // level required for donations
+const COMPANY_REP_MAX = 200000;  // level required for most factions
+export const FAVOUR_MAX = 150;   // level required for donations
+const CITY_MONEY_REQ = 50200000; // volhaven 50m + travel 200k
 
 export class LifeL2 extends LifeL1 {
     /** 
@@ -35,6 +36,41 @@ export class LifeL2 extends LifeL1 {
     /** @param {string} faction */
     shouldAcceptInvite(faction) {
         return !Faction.cities().includes(faction);
+    }
+
+    /** @returns {WorkItem | null} */
+    workJoinCities() {
+        if (this.cash < CITY_MONEY_REQ) {
+            return;
+        }
+
+        let info = this.ns.getCharacterInformation();
+        let joins = info.factions;
+        let invites = this.ns.checkFactionInvitations();
+
+        /** @type {{[key: string]: string[]}} */
+        let preclusions = {
+            'Sector-12': ['Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'], 
+            'Aevum':     ['Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'], 
+            'Chongqing': ['Sector-12', 'Aevum', 'Volhaven'], 
+            'New Tokyo': ['Sector-12', 'Aevum', 'Volhaven'], 
+            'Ishima':    ['Sector-12', 'Aevum', 'Volhaven'], 
+            'Volhaven':  ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima']
+        };
+
+        for (let city of Faction.cities()) {
+            if (info.city != city &&
+                !joins.includes(city) && 
+                !invites.includes(city) && 
+                !preclusions[city].map(joins.includes.bind(joins)).reduce((a, b) => a || b, false)) {
+                    this.log.info(`Travelling to ${city} for a faction invite.`);
+                    this.ns.travelToCity(city);
+                    return null;
+            }
+        }
+
+        let joinedCities = Faction.getCurrent(this.ns).filter(f => Faction.cities().includes(f.name));
+        return null;
     }
 
     /** @returns {WorkItem | null} */
@@ -133,6 +169,10 @@ export class Faction {
         return ['Slum Snakes', 'Tetrads'];
     }
 
+    static companies() {
+        return Object.getOwnPropertyNames(companyFactions);
+    }
+
     /**
      * @param {IGame} ns
      * @returns Faction[]
@@ -185,10 +225,6 @@ class Company {
         return this.name;
     }
 
-    static factions() {
-        return Object.getOwnPropertyNames(companyFactions);
-    }
-
     /**
      * @param {IGame} ns
      * @returns Company[]
@@ -213,7 +249,7 @@ class Company {
     static getAll(ns) {
         let info = ns.getCharacterInformation();
         let cs = [];
-        for (let c of Company.factions()) {
+        for (let c of Faction.companies()) {
             let rep = ns.getCompanyRep(c);
             let fav = ns.getCompanyFavor(c);
             let fvg = ns.getCompanyFavorGain(c);

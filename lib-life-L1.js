@@ -116,7 +116,7 @@ export class LifeL1 extends LifeL0 {
     }
 
     selectWork() {
-        for (let jobF of [this.workWriteCode, this.workTrainStats, this.workCommitCrimes, this.workForFactions, this.workForCompanies, this.workJoinCompanies]) {
+        for (let jobF of [this.workWriteCode, this.workTrainStats, this.workCommitCrimes, this.workJoinCities, this.workForFactions, this.workForCompanies, this.workJoinCompanies]) {
             let job = jobF.bind(this)();
             if (job != null) return job;
         }
@@ -179,6 +179,11 @@ export class LifeL1 extends LifeL0 {
 
     /** @returns {WorkItem | null} */
     workCommitCrimes() {
+        return null;
+    }
+
+    /** @returns {WorkItem | null} */
+    workJoinCities() {        
         return null;
     }
 
