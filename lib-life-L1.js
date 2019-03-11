@@ -227,7 +227,7 @@ export class LifeL1 extends LifeL0 {
     }
 
     shouldCommitCrimes() {
-        return this.cash >= TRAIN_MIN;
+        return this.cash >= TRAIN_MIN && this.ns.getCharacterInformation().bitnode == 2;
     }
 
     spareRamNeeded() {
