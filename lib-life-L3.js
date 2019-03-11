@@ -180,9 +180,9 @@ export class LifeL3 extends LifeL2 {
 
     /** @param {ICharacterInfoMultipliers} mult */
     guessCharismaMult(mult) {
-        // start with SF1-1
-        let stat = 1.16; 
-        let statExp = 1.16;
+        // start with SF1-2
+        let stat = 1.24; 
+        let statExp = 1.24;
 
         let augs = this.ns.getOwnedAugmentations();        
         if (augs.includes("NeuroFlux Governor")) {
