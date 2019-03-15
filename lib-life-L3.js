@@ -180,9 +180,9 @@ export class LifeL3 extends LifeL2 {
 
     /** @param {ICharacterInfoMultipliers} mult */
     guessCharismaMult(mult) {
-        // start with SF1-2
-        let stat = 1.24; 
-        let statExp = 1.24;
+        // start with SF1-3
+        let stat = 1.28; 
+        let statExp = 1.28;
 
         let augs = this.ns.getOwnedAugmentations();        
         if (augs.includes("NeuroFlux Governor")) {
@@ -218,6 +218,17 @@ export class LifeL3 extends LifeL2 {
         if (augs.includes("SmartJaw")) {
             stat = stat * 1.5;
             statExp = statExp * 1.5;
+        }
+        if (augs.includes("Xanipher")) {
+            stat = stat * 1.2;
+            statExp = statExp * 1.15;
+        }
+        if (augs.includes("nextSENS Gene Modification")) {
+            stat = stat * 1.2;
+        }
+        if (augs.includes("TITN-41 Gene-Modification Injection")) {
+            stat = stat * 1.15;
+            statExp = stat * 1.15;
         }
 
         mult.charisma = stat;
