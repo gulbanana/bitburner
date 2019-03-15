@@ -197,7 +197,7 @@ export class LifeL3 extends LifeL2 {
         }
         if (augs.includes("Neurotrainer I")) { 
             statExp = statExp * 1.1;
-        }
+        }   
         if (augs.includes("Neurotrainer II")) { 
             statExp = statExp * 1.15;
         }
