@@ -1,7 +1,7 @@
 import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
 import { Augmentation, FactionWithAugs } from './lib-life-L3.js';
-import { FAVOUR_MAX } from './lib-life-L2.js';
+import { FAVOUR_MAX, Faction } from './lib-life-L2.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
@@ -9,6 +9,11 @@ export async function main(ns) {
 
     let facsByRep = FactionWithAugs.getAll(ns)
         .sort((a, b) => b.reputation - a.reputation);
+   
+    let info = ns.getCharacterInformation();
+    if (info.bitnode == 2) {
+        facsByRep = facsByRep.filter(f => f.job != null);
+    }
 
     /** @type {{[key: string]: FactionWithAugs}} */
     let facsByName = {};
