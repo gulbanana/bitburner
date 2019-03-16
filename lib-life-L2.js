@@ -151,7 +151,7 @@ export class Faction {
      * @param {number} rep
      * @param {number} fav
      * @param {number} fvg
-     * @param {"hacking" | "security"} job
+     * @param {WorkName | null} job
      */
     constructor(name, rep, fav, fvg, job) {
         this.name = name;
@@ -165,8 +165,15 @@ export class Faction {
         return ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'];
     }
 
-    static gangs() {
+    static security() {
         return ['Slum Snakes', 'Tetrads'];
+    }
+
+    static gangs() {
+        return [
+            'Slum Snakes', 'Tetrads', 'The Syndicate', 'The Dark Army', 'Speakers for the Dead',
+            'NiteSec', 'The Black Hand'
+        ];
     }
 
     static companies() {
@@ -175,17 +182,29 @@ export class Faction {
 
     /**
      * @param {IGame} ns
+     * @param {string} name
+     */
+    static get(ns, name) {
+        let info = ns.getCharacterInformation();
+        let rep = ns.getFactionRep(name);
+            let fav = ns.getFactionFavor(name);
+            let fvg = ns.getFactionFavorGain(name);
+            /** @type {WorkName | null} */
+            let job = Faction.security().includes(name) ? 'security' : 'hacking';
+            if (info.bitnode == 2 && Faction.gangs().includes(name))
+            {
+                job = null;
+            }
+            return new Faction(name, rep, fav, fvg, job);
+    }
+
+    /**
+     * @param {IGame} ns
      * @returns Faction[]
      */
     static getCurrent(ns) {
         let info = ns.getCharacterInformation();
-        return info.factions.map(f => 
-        {
-            let rep = ns.getFactionRep(f);
-            let fav = ns.getFactionFavor(f);
-            let fvg = ns.getFactionFavorGain(f);
-            return new Faction(f, rep, fav, fvg, Faction.gangs().includes(f) ? 'security' : 'hacking');
-        });
+        return info.factions.map(f => Faction.get(ns, f));
     }
 }
 

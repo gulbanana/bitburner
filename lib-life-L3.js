@@ -61,8 +61,8 @@ export class LifeL3 extends LifeL2 {
 
     // L3 override which takes augs into account
     workForFactions() {
-        let factions = FactionWithAugs.getAll(this.ns);
-        this.log.debug(`joined factions: ${factions.map(f => f.name)}`);
+        let factions = FactionWithAugs.getAll(this.ns).filter(f => f.job != null);
+        this.log.debug(`workable factions: ${factions.map(f => f.name)}`);
         
         factions = factions.filter(f => f.reputation < f.maxAugRep());
         this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
@@ -242,7 +242,7 @@ export class FactionWithAugs extends Faction {
      * @param {number} rep
      * @param {number} fav
      * @param {number} fvg
-     * @param {"hacking" | "security"} job
+     * @param {WorkName | null} job
      * @param {Augmentation[]} augs
      */
     constructor(name, rep, fav, fvg, job, augs) {
@@ -278,20 +278,27 @@ export class FactionWithAugs extends Faction {
 
     /**
      * @param {IGame} ns
-     * @param {string} f
+     * @param {string} name
      * @returns FactionWithAugs
      */
-    static get(ns, f) {
-        let rep = ns.getFactionRep(f);
-        let fav = ns.getFactionFavor(f);
-        let fvg = ns.getFactionFavorGain(f);
+    static get(ns, name) {
+        let info = ns.getCharacterInformation();
+        let rep = ns.getFactionRep(name);
+        let fav = ns.getFactionFavor(name);
+        let fvg = ns.getFactionFavorGain(name);
+        /** @type {WorkName | null} */
+        let job = Faction.security().includes(name) ? 'security' : 'hacking';
+        if (info.bitnode == 2 && Faction.gangs().includes(name))
+        {
+            job = null;
+        }
         let augInfo = ns.getOwnedAugmentations(true);
-        let augs = ns.getAugmentationsFromFaction(f).map(a => {
+        let augs = ns.getAugmentationsFromFaction(name).map(a => {
             let [aRep, aPrc] = ns.getAugmentationCost(a);
             let has = augInfo.includes(a);
-            return new Augmentation(a, f, aRep, aPrc, has);
+            return new Augmentation(a, name, aRep, aPrc, has);
         })
-        return new FactionWithAugs(f, rep, fav, fvg, Faction.gangs().includes(f) ? 'security' : 'hacking', augs);
+        return new FactionWithAugs(name, rep, fav, fvg, job, augs);
     }
 }
 

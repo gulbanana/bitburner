@@ -54,6 +54,8 @@ declare type ProgramName = 'BruteSSH.exe' | 'FTPCrack.exe' | 'relaySMTP.exe' | '
 
 declare type CrimeName = 'shoplift' | 'rob store' | 'mug' | 'larceny' | 'deal drugs' | 'bond forgery' | 'traffick arms' | 'homicide' | 'grand theft auto' | 'kidnap' | 'assassinate' | 'heist';
 
+declare type WorkName = 'hacking' | 'field' | 'security';
+
 declare interface IGame {
     /*************************/
     /* Source-File 4 Level 1 */
@@ -98,7 +100,7 @@ declare interface IGame {
     getCompanyFavorGain(companyName: string): number;
     checkFactionInvitations(): string[];
     joinFaction(name: string): void;
-    workForFaction(factionName: string, workType: 'hacking' | 'field' | 'security'): number;
+    workForFaction(factionName: string, workType: WorkName): number;
     getFactionRep(companyName: string): number;
     getFactionFavor(companyName: string): number;
     getFactionFavorGain(companyName: string): number;
