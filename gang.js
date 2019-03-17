@@ -40,35 +40,42 @@ export async function main(ns) {
             let cash = ns.getServerMoneyAvailable('home');
 
             members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
-            let m = members[0];
-            log.debug(`purchasing for least-ascended member ${m.name}`)
 
-            let neededGear = gear.filter(e => !m.equipment.includes(e.name));
-            neededGear.sort((a, b) => a.cost - b.cost);
+            let improveGanger = /** @param {number} ix */ function(ix) {
+                let m = members[ix]
+                log.debug(`purchasing for least-ascended member ${m.name}`)
 
-            if (neededGear.length > 0) {
-                let g = neededGear[0];
-                log.debug(`missing gear:`);
-                for (let e of neededGear) {
-                    log.debug(e.toString());
-                }
-
-                if (neededGear[0].cost <= cash && ns.gang.purchaseEquipment(m.name, g.name)) {
-                    log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
-                    m.equipment.push(g.name);
-                    bought = true;
-                }
-            } else {
-                let result = ns.gang.ascendMember(m.name);
-                if (result) {
-                    log.info(`ascended ${m.name} - ${result.respect} respect`);
-                    members[0] = ns.gang.getMemberInformation(m.name);
-                    members[0].name = m.name;
-                    bought = true;
-                } else {
-                    log.error(`failed to ascend ${m.name}`);
+                let neededGear = gear.filter(e => !m.equipment.includes(e.name));
+                neededGear.sort((a, b) => a.cost - b.cost);
+    
+                if (neededGear.length > 0) {
+                    let g = neededGear[0];
+                    log.debug(`missing gear:`);
+                    for (let e of neededGear) {
+                        log.debug(e.toString());
+                    }
+    
+                    if (neededGear[0].cost <= cash && ns.gang.purchaseEquipment(m.name, g.name)) {
+                        log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
+                        m.equipment.push(g.name);
+                        bought = true;
+                    }
+                } else if (MANAGED_TASKS.includes(m.task)) {
+                    let result = ns.gang.ascendMember(m.name);
+                    if (result) {
+                        log.info(`ascended ${m.name} - ${result.respect} respect`);
+                        members[0] = ns.gang.getMemberInformation(m.name);
+                        members[0].name = m.name;
+                        bought = true;
+                    } else {
+                        log.error(`failed to ascend ${m.name}`);
+                    }
+                } else if (ix+1 < members.length) {
+                    improveGanger(ix+1);
                 }
             }
+            
+            improveGanger(0);
         }
         log.debug('finished purchase run');
         
