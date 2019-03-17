@@ -90,8 +90,8 @@ export async function main(ns) {
                     ensureTask('Train Combat');
                 } else if (member.hacking < (member.hackingAscensionMult * STAT_BASE)) {
                     ensureTask('Train Hacking');
-                } else if (member.charisma < (member.charismaAscensionMult * STAT_BASE)) {
-                    ensureTask('Train Charisma');
+                //} else if (member.charisma < (member.charismaAscensionMult * STAT_BASE)) {
+                //    ensureTask('Train Charisma');
                 } else if (info.wantedLevel > 1) {
                     ensureTask('Vigilante Justice');
                 } else {
