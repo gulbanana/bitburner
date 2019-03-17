@@ -34,7 +34,7 @@ export async function main(ns) {
 
         // buy and ascend
         let gear = Equipment.getAll(ns).filter(e => e.type != 'Augmentation');
-        let bought = ns.getServerMoneyAvailable('home') >= BUY_THRESHHOLD;
+        let bought = ns.getServerMoneyAvailable('home') >= BUY_THRESHHOLD || ns.getPurchasedServers().length == ns.getPurchasedServerLimit();
         while (bought) {
             bought = false;
             let cash = ns.getServerMoneyAvailable('home');
