@@ -153,8 +153,8 @@ export async function main(ns) {
     }
 
     while (true) {
-        await ns.sleep(5000);
         tick();
+        await ns.sleep(10000);
     }
 } 
 
