@@ -1,0 +1,95 @@
+import { Logger } from './lib-log.js';
+import * as format from './lib-format.js';
+
+/** @param {IGame} ns */
+export async function main(ns) {
+    let debug = ns.args.includes('debug');
+    let log = new Logger(ns, { termInfo: true, termDebug: debug });
+
+    let members = ns.gang.getMemberNames().map(name => {
+        let m = ns.gang.getMemberInformation(name);
+        m.name = name;
+        return m;
+    });
+    if (members.length == 0) {
+        log.error("No gang!");
+        ns.exit();
+    }
+
+    let gear = Equipment.getAll(ns).filter(e => e.type != 'Augmentation');
+
+    let bought = true;
+    while (bought) {
+        bought = false;
+        let cash = ns.getServerMoneyAvailable('home');
+
+        members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
+        let m = members[0];
+        log.debug(`purchasing for least-ascended member ${m.name}`)
+
+        let neededGear = gear.filter(e => !m.equipment.includes(e.name));
+        neededGear.sort((a, b) => a.cost - b.cost);
+
+        if (neededGear.length > 0) {
+            let g = neededGear[0];
+            log.debug(`missing gear:`);
+            for (let e of neededGear) {
+                log.debug(e.toString());
+            }
+
+            if (neededGear[0].cost <= cash && ns.gang.purchaseEquipment(m.name, g.name)) {
+                log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
+                m.equipment.push(g.name);
+                bought = true;
+            }
+        } else {
+            let result = ns.gang.ascendMember(m.name);
+            if (result) {
+                log.info(`ascended ${m.name} - ${result.respect} respect`);
+                members[0] = ns.gang.getMemberInformation(m.name);
+                ns.gang.setMemberTask(m.name, 'Train Combat');
+                bought = true;
+            } else {
+                log.error(`failed to ascend ${m.name}`);
+            }
+        }
+    }
+
+    log.debug('finished purchase run');
+}
+
+class Equipment {
+    /**
+     * @param {IGame} ns
+     * @returns {Equipment[]}
+     */
+    static getAll(ns) {
+        return ns.gang.getEquipmentNames().map(name => Equipment.get(ns, name));
+    }
+
+    /**
+     * @param {IGame} ns
+     * @param {string} name
+     * @returns {Equipment}
+     */
+    static get(ns, name) {
+        let cost = ns.gang.getEquipmentCost(name);
+        let type = ns.gang.getEquipmentType(name);
+        return new Equipment(name, cost, type);
+    }
+
+    /**
+     * @param {string} name
+     * @param {number} cost
+     * @param {EquipmentType} type
+     */
+    constructor(name, cost, type) {
+        this.name = name;
+        this.cost = cost;
+        this.type = type;
+    }
+
+    toString() {
+        return `${this.type.padEnd(13)} ${this.name.padEnd(23)} ${format.money(this.cost)}`;
+    }
+}
