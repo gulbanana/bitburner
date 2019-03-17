@@ -1,6 +1,6 @@
 declare type EquipmentType = 'Weapon' | 'Armor' | 'Vehicle' | 'Rootkit' | 'Augmentation';
 
-declare type TaskName = string;
+declare type TaskName = 'Unassigned' | 'Train Combat' | 'Train Hacking' | 'Train Charisma' | 'Vigilante Justice' | 'Territory Warfare';
 
 declare interface IMemberInformation {
     name?: string;
@@ -14,7 +14,7 @@ declare interface IMemberInformation {
     strength: number;
     strengthEquipMult: number;
     strengthAscensionMult: number;
-    task: string;
+    task: TaskName;
 }
 
 declare interface IAscension {
@@ -25,6 +25,19 @@ declare interface IAscension {
     dex: number;
     agi: number;
     cha: number;
+}
+
+declare interface IGangInfo {
+    faction: string;               
+    isHacking: boolean;
+    moneyGainRate: number;
+    power: number;
+    respect: number;
+    respectGainRate: number;
+    territory: number;
+    territoryClashChance: number;
+    wantedLevel: number;
+    wantedLevelGainRate: number;
 }
 
 declare interface IGang {
@@ -38,6 +51,9 @@ declare interface IGang {
     getEquipmentNames(): string[];
     getEquipmentCost(equipName: string): number;
     getEquipmentType(equipName: string): EquipmentType;
+
+    getGangInformation(): IGangInfo;
+
     getMemberNames(): string[];
     getMemberInformation(name: string): IMemberInformation;
     purchaseEquipment(memberName: string, equipName: string): boolean;

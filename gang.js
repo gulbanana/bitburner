@@ -1,6 +1,10 @@
 import { Logger } from './lib-log.js';
 import * as format from './lib-format.js';
 
+const BUY_THRESHHOLD = 1000000000;
+const STAT_BASE = 30;
+const MANAGED_TASKS = ['Unassigned', 'Train Combat', 'Train Hacking', 'Train Charisma', 'Vigilante Justice', 'Territory Warfare'];
+
 /** @param {IGame} ns */
 export async function main(ns) {
     let debug = ns.args.includes('debug');
@@ -30,7 +34,7 @@ export async function main(ns) {
 
         // buy and ascend
         let gear = Equipment.getAll(ns).filter(e => e.type != 'Augmentation');
-        let bought = true;
+        let bought = ns.getServerMoneyAvailable('home') >= BUY_THRESHHOLD;
         while (bought) {
             bought = false;
             let cash = ns.getServerMoneyAvailable('home');
@@ -59,7 +63,7 @@ export async function main(ns) {
                 if (result) {
                     log.info(`ascended ${m.name} - ${result.respect} respect`);
                     members[0] = ns.gang.getMemberInformation(m.name);
-                    ns.gang.setMemberTask(m.name, 'Train Combat');
+                    members[0].name = m.name;
                     bought = true;
                 } else {
                     log.error(`failed to ascend ${m.name}`);
@@ -69,8 +73,9 @@ export async function main(ns) {
         log.debug('finished purchase run');
         
         // manage tasks
+        let info = ns.gang.getGangInformation();
         for (let member of members) {
-            let ensureTask = /** @param {string} t */ t => {
+            let ensureTask = /** @param {TaskName} t */ t => {
                 if (member.task != t) {
                     if (ns.gang.setMemberTask(member.name, t)) {
                         log.info(`assigned ${member.name} to '${t}'`);
@@ -80,15 +85,17 @@ export async function main(ns) {
                 }
             };
 
-            if (['Train Combat', 'Train Hacking', 'Train Charisma', 'Vigilante Justice'].includes(member.task)) {
-                if (member.strength < (member.strengthAscensionMult * 50)) {
+            if (MANAGED_TASKS.includes(member.task)) {
+                if (member.strength < (member.strengthAscensionMult * STAT_BASE)) {
                     ensureTask('Train Combat');
-                } else if (member.hacking < (member.hackingAscensionMult * 50)) {
+                } else if (member.hacking < (member.hackingAscensionMult * STAT_BASE)) {
                     ensureTask('Train Hacking');
-                } else if (member.charisma < (member.charismaAscensionMult * 50)) {
+                } else if (member.charisma < (member.charismaAscensionMult * STAT_BASE)) {
                     ensureTask('Train Charisma');
-                } else {
+                } else if (info.wantedLevel > 1) {
                     ensureTask('Vigilante Justice');
+                } else {
+                    ensureTask('Territory Warfare');
                 }
             }
         }
