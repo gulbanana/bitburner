@@ -4,6 +4,8 @@ import * as format from './lib-format.js';
 const BUY_THRESHHOLD = 1000000000;
 const STAT_BASE = 30;
 const MANAGED_TASKS = ['Unassigned', 'Train Combat', 'Train Hacking', 'Train Charisma', 'Vigilante Justice', 'Territory Warfare'];
+const TICK_MS = 10000;
+const ASSIGN_MS = 1000;
 
 /** @param {IGame} ns */
 export async function main(ns) {
@@ -11,7 +13,7 @@ export async function main(ns) {
     let dryRun = ns.args.includes('dry');
     let log = new Logger(ns, { termInfo: debug, termDebug: debug, showDebug: debug });
 
-    function tick() {
+    async function tick() {
         // recruit new members
         if (ns.gang.canRecruitMember()) {
             let name = `Ganger ${ns.gang.getMemberNames().length + 1}`;
@@ -100,8 +102,10 @@ export async function main(ns) {
                     ensureTask('Train Hacking');
                 //} else if (member.charisma < (member.charismaAscensionMult * STAT_BASE)) {
                 //    ensureTask('Train Charisma');
-                } else if (info.wantedLevel > 1) {
+                } else if (info.wantedLevelGainRate > 0) {
                     ensureTask('Vigilante Justice');
+                    await ns.sleep(ASSIGN_MS);
+                    info = ns.gang.getGangInformation();
                 } else {
                     ensureTask('Territory Warfare');
                 }
@@ -110,8 +114,8 @@ export async function main(ns) {
     }
 
     while (true) {
-        tick();
-        await ns.sleep(10000);
+        await tick();
+        await ns.sleep(TICK_MS);
     }
 }
 
