@@ -95,7 +95,8 @@ export async function main(ns) {
                 }
             };
 
-            if (MANAGED_TASKS.includes(member.task)) {
+            if (MANAGED_TASKS.includes(member.task) && 
+                (member.task != 'Vigilante Justice' || info.wantedLevel == 1)) {
                 if (member.strength < (member.strengthAscensionMult * STAT_BASE)) {
                     ensureTask('Train Combat');
                 } else if (member.hacking < (member.hackingAscensionMult * STAT_BASE)) {
