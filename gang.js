@@ -67,8 +67,8 @@ export async function main(ns) {
                     let result = ns.gang.ascendMember(m.name);
                     if (result) {
                         log.info(`ascended ${m.name} - ${result.respect} respect`);
-                        members[0] = ns.gang.getMemberInformation(m.name);
-                        members[0].name = m.name;
+                        members[ix] = ns.gang.getMemberInformation(m.name);
+                        members[ix].name = m.name;
                         bought = true;
                     } else {
                         log.error(`failed to ascend ${m.name}`);
