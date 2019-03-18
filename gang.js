@@ -8,6 +8,7 @@ const MANAGED_TASKS = ['Unassigned', 'Train Combat', 'Train Hacking', 'Train Cha
 /** @param {IGame} ns */
 export async function main(ns) {
     let debug = ns.args.includes('debug');
+    let dryRun = ns.args.includes('dry');
     let log = new Logger(ns, { termInfo: debug, termDebug: debug, showDebug: debug });
 
     function tick() {
@@ -60,7 +61,7 @@ export async function main(ns) {
                         m.equipment.push(g.name);
                         bought = true;
                     }
-                } else if (MANAGED_TASKS.includes(m.task)) {
+                } else if (!dryRun && MANAGED_TASKS.includes(m.task)) {
                     let result = ns.gang.ascendMember(m.name);
                     if (result) {
                         log.info(`ascended ${m.name} - ${result.respect} respect`);
