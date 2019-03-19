@@ -105,7 +105,7 @@ export async function main(ns) {
                     ensureTask('Train Hacking');
                 //} else if (member.charisma < (member.charismaAscensionMult * STAT_BASE)) {
                 //    ensureTask('Train Charisma');
-                } else if (info.wantedLevelGainRate > 0) {
+                } else if (info.wantedLevelGainRate > 0 || info.wantedLevel > 100) {
                     ensureTask('Vigilante Justice');
                     await ns.sleep(ASSIGN_MS);
                     info = ns.gang.getGangInformation();
