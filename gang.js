@@ -63,25 +63,29 @@ export async function main(ns) {
         };
 
         if (ns.getServerMoneyAvailable('home') >= BUY_THRESHHOLD || ns.getPurchasedServers().length == ns.getPurchasedServerLimit()) {
-            let boughtAll = true;
-            for (let m of members) {
-                boughtAll = buyFor(m);
-                if (!boughtAll) break;
-            }
-
-            if (boughtAll && !dryRun) {
-                members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
-                let m = members.filter(m => MANAGED_TASKS.includes(m.task))[0];
-
-                let result = ns.gang.ascendMember(m.name);
-                if (result) {
-                    log.info(`ascended ${m.name} - ${result.respect} respect`);
-                    members[0] = ns.gang.getMemberInformation(m.name);
-                    members[0].name = m.name;
-                } else {
-                    log.error(`failed to ascend ${m.name}`);
+            let ascendOnce = () => {
+                let boughtAll = true;
+                for (let m of members) {
+                    boughtAll = buyFor(m);
+                    if (!boughtAll) break;
                 }
-            }
+
+                if (boughtAll && !dryRun) {
+                    members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
+                    let m = members.filter(m => MANAGED_TASKS.includes(m.task))[0];
+
+                    let result = ns.gang.ascendMember(m.name);
+                    if (result) {
+                        log.info(`ascended ${m.name} - ${result.respect} respect`);
+                        members[0] = ns.gang.getMemberInformation(m.name);
+                        members[0].name = m.name;
+                        ascendOnce();
+                    } else {
+                        log.error(`failed to ascend ${m.name}`);
+                    }
+                }
+            };
+            ascendOnce();
         }
         
         // manage tasks
