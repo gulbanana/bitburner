@@ -69,7 +69,7 @@ export async function main(ns) {
                 if (!boughtAll) break;
             }
 
-            if (boughtAll) {
+            if (boughtAll && !dryRun) {
                 members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
                 let m = members.filter(m => MANAGED_TASKS.includes(m.task))[0];
 
