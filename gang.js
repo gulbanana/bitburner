@@ -36,51 +36,53 @@ export async function main(ns) {
         }
 
         // buy and ascend
+        let cash = ns.getServerMoneyAvailable('home');
+        log.debug(`initial cash: ${format.money(cash)}`);
         let gear = Equipment.getAll(ns).filter(e => e.type != 'Augmentation');
-        let bought = ns.getServerMoneyAvailable('home') >= BUY_THRESHHOLD || ns.getPurchasedServers().length == ns.getPurchasedServerLimit();
-        while (bought) {
-            bought = false;
-            let cash = ns.getServerMoneyAvailable('home');
 
-            members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
+        let buyFor = /** @param {IMemberInformation} m */ (m) => {
+            let neededGear = gear.filter(e => !m.equipment.includes(e.name)).sort((a, b) => a.cost - b.cost);
+            
+            while (neededGear.length > 0 && neededGear[0].cost <= cash) {
+                let g = neededGear[0];
+                if (ns.gang.purchaseEquipment(m.name, g.name)) {
+                    log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
 
-            let improveGanger = /** @param {number} ix */ function(ix) {
-                let m = members[ix]
-                log.debug(`purchasing for least-ascended member ${m.name}`)
+                    m.equipment.push(g.name);
 
-                let neededGear = gear.filter(e => !m.equipment.includes(e.name));
-                neededGear.sort((a, b) => a.cost - b.cost);
-    
-                if (neededGear.length > 0) {
-                    let g = neededGear[0];
-                    log.debug(`missing gear:`);
-                    for (let e of neededGear) {
-                        log.debug(e.toString());
-                    }
-    
-                    if (neededGear[0].cost <= cash && ns.gang.purchaseEquipment(m.name, g.name)) {
-                        log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
-                        m.equipment.push(g.name);
-                        bought = true;
-                    }
-                } else if (!dryRun && MANAGED_TASKS.includes(m.task)) {
-                    let result = ns.gang.ascendMember(m.name);
-                    if (result) {
-                        log.info(`ascended ${m.name} - ${result.respect} respect`);
-                        members[ix] = ns.gang.getMemberInformation(m.name);
-                        members[ix].name = m.name;
-                        bought = true;
-                    } else {
-                        log.error(`failed to ascend ${m.name}`);
-                    }
-                } else if (ix+1 < members.length) {
-                    improveGanger(ix+1);
+                    let cash = ns.getServerMoneyAvailable('home');
+                    log.debug(`remaining cash: ${format.money(cash)}`);
+                    neededGear = gear.filter(e => !m.equipment.includes(e.name)).sort((a, b) => a.cost - b.cost);
+                } else {
+                    log.error(`failed to purchase ${g.name} for ${m.name} - ${format.money(g.cost)}`);
+                    break;
                 }
             }
-            
-            improveGanger(0);
+
+            return (neededGear.length == 0);
+        };
+
+        if (ns.getServerMoneyAvailable('home') >= BUY_THRESHHOLD || ns.getPurchasedServers().length == ns.getPurchasedServerLimit()) {
+            let boughtAll = true;
+            for (let m of members) {
+                boughtAll = buyFor(m);
+                if (!boughtAll) break;
+            }
+
+            if (boughtAll) {
+                members.sort((a, b) => a.hackingAscensionMult - b.hackingAscensionMult); 
+                let m = members.filter(m => MANAGED_TASKS.includes(m.task))[0];
+
+                let result = ns.gang.ascendMember(m.name);
+                if (result) {
+                    log.info(`ascended ${m.name} - ${result.respect} respect`);
+                    members[0] = ns.gang.getMemberInformation(m.name);
+                    members[0].name = m.name;
+                } else {
+                    log.error(`failed to ascend ${m.name}`);
+                }
+            }
         }
-        log.debug('finished purchase run');
         
         // manage tasks
         let info = ns.gang.getGangInformation();
