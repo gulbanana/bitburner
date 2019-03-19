@@ -50,7 +50,7 @@ export async function main(ns) {
 
                     m.equipment.push(g.name);
 
-                    let cash = ns.getServerMoneyAvailable('home');
+                    cash = ns.getServerMoneyAvailable('home');
                     log.debug(`remaining cash: ${format.money(cash)}`);
                     neededGear = gear.filter(e => !m.equipment.includes(e.name)).sort((a, b) => a.cost - b.cost);
                 } else {
