@@ -3,7 +3,7 @@ declare type EquipmentType = 'Weapon' | 'Armor' | 'Vehicle' | 'Rootkit' | 'Augme
 declare type TaskName = 'Unassigned' | 'Train Combat' | 'Train Hacking' | 'Train Charisma' | 'Vigilante Justice' | 'Territory Warfare';
 
 declare interface IMemberInformation {
-    name?: string;
+    augmentations: string[];
     charisma: number;
     charismaEquipMult: number;
     charismaAscensionMult: number;
@@ -15,6 +15,7 @@ declare interface IMemberInformation {
     strengthEquipMult: number;
     strengthAscensionMult: number;
     task: TaskName;
+    name?: string;
 }
 
 declare interface IAscension {
