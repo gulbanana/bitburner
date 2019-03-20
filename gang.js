@@ -104,14 +104,18 @@ export async function main(ns) {
                     if (result) {
                         members[0] = ns.gang.getMemberInformation(m.name);
                         members[0].name = m.name;
+
                         log.info(`ascended ${m.name} - ${format.decper(members[0].strengthAscensionMult)}`);
-                        ascendOnce();
+                        return true;
                     } else {
                         log.error(`failed to ascend ${m.name}`);
                     }
                 }
+
+                return false;
             };
-            ascendOnce();
+
+            while (ascendOnce()) { }
         }
         
         // manage tasks
