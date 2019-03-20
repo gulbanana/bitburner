@@ -70,11 +70,11 @@ export async function main(ns) {
                         if (ns.gang.purchaseEquipment(m.name, g.name)) {
                             log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
         
-                            m.equipment.push(g.name);
+                            m.augmentations.push(g.name);
         
                             cash = ns.getServerMoneyAvailable('home');
                             log.debug(`remaining cash: ${format.money(cash)}`);
-                            neededGear = gear.filter(e => !m.equipment.includes(e.name)).sort((a, b) => a.cost - b.cost);
+                            neededAugs = augs.filter(e => !m.augmentations.includes(e.name)).sort((a, b) => a.cost - b.cost);
                         } else {
                             log.error(`failed to purchase ${g.name} for ${m.name} - ${format.money(g.cost)}`);
                             break;
