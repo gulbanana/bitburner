@@ -48,7 +48,7 @@ export async function main(ns) {
             while (neededGear.length > 0 && neededGear[0].cost <= cash) {
                 let g = neededGear[0];
                 if (ns.gang.purchaseEquipment(m.name, g.name)) {
-                    log.info(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
+                    log.debug(`purchased ${g.name} for ${m.name} - ${format.money(g.cost)}`);
 
                     m.equipment.push(g.name);
 
@@ -102,9 +102,9 @@ export async function main(ns) {
 
                     let result = ns.gang.ascendMember(m.name);
                     if (result) {
-                        log.info(`ascended ${m.name} - ${result.respect} respect`);
                         members[0] = ns.gang.getMemberInformation(m.name);
                         members[0].name = m.name;
+                        log.info(`ascended ${m.name} - ${format.decper(members[0].strengthAscensionMult)}`);
                         ascendOnce();
                     } else {
                         log.error(`failed to ascend ${m.name}`);
