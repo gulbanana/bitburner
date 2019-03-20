@@ -690,12 +690,6 @@ export class LifeL1 extends LifeL0 {
         return null;
     }
 
-    /** @param {ICharacterInfoMultipliers} mult */
-    guessCharismaMult(mult) {
-        mult.charisma = Math.min(mult.agility, mult.defense, mult.dexterity, mult.agility);
-        mult.charismaExp = Math.min(mult.agilityExp, mult.defenseExp, mult.dexterityExp, mult.agilityExp);
-    }
-
     /** @returns {WorkItem | null} */
     workForFactions() {
         return null;
@@ -731,6 +725,63 @@ export class LifeL1 extends LifeL0 {
         let us = universities();
         us.sort((a, b) => b.leadershipPrice - a.leadershipPrice);
         return us[0];
+    }
+
+    /** @param {ICharacterInfoMultipliers} mult */
+    guessCharismaMult(mult) {
+        // start with SF1-3 and SF2-1
+        let stat = 1.28 * 1.24;
+        let statExp = 1.28;
+
+        let augs = this.ns.getOwnedAugmentations();        
+        if (augs.includes("NeuroFlux Governor")) {
+            let level = augs.length / 2; // XXX 
+            for (let i = 0; i < level; i++) {
+                stat = stat * 1.01;
+                statExp = statExp * 1.01;
+            }
+        }
+        if (augs.includes("FocusWire")) { 
+            statExp = statExp * 1.05;
+        }
+        if (augs.includes("Neurotrainer I")) { 
+            statExp = statExp * 1.1;
+        }   
+        if (augs.includes("Neurotrainer II")) { 
+            statExp = statExp * 1.15;
+        }
+        if (augs.includes("Power Recirculation Core")) { 
+            stat = stat * 1.05;
+            statExp = statExp * 1.1;
+        }
+        if (augs.includes("Speech Enhancement")) { 
+            stat = stat * 1.1;
+        }
+        if (augs.includes("Speech Processor Implant")) { 
+            stat = stat * 1.2;
+        }
+        if (augs.includes("Enhanced Social Interaction Implant")) {
+            stat = stat * 1.6;
+            statExp = statExp * 1.6;
+        }
+        if (augs.includes("SmartJaw")) {
+            stat = stat * 1.5;
+            statExp = statExp * 1.5;
+        }
+        if (augs.includes("Xanipher")) {
+            stat = stat * 1.2;
+            statExp = statExp * 1.15;
+        }
+        if (augs.includes("nextSENS Gene Modification")) {
+            stat = stat * 1.2;
+        }
+        if (augs.includes("TITN-41 Gene-Modification Injection")) {
+            stat = stat * 1.15;
+            statExp = stat * 1.15;
+        }
+
+        mult.charisma = stat;
+        mult.charismaExp = statExp;
     }
    
     /**
@@ -1071,62 +1122,5 @@ export class LifeL3 extends LifeL2 {
         }
 
         return null;
-    }
-
-    /** @param {ICharacterInfoMultipliers} mult */
-    guessCharismaMult(mult) {
-        // start with SF1-3
-        let stat = 1.28; 
-        let statExp = 1.28;
-
-        let augs = this.ns.getOwnedAugmentations();        
-        if (augs.includes("NeuroFlux Governor")) {
-            let level = augs.length / 2; // XXX 
-            for (let i = 0; i < level; i++) {
-                stat = stat * 1.01;
-                statExp = statExp * 1.01;
-            }
-        }
-        if (augs.includes("FocusWire")) { 
-            statExp = statExp * 1.05;
-        }
-        if (augs.includes("Neurotrainer I")) { 
-            statExp = statExp * 1.1;
-        }   
-        if (augs.includes("Neurotrainer II")) { 
-            statExp = statExp * 1.15;
-        }
-        if (augs.includes("Power Recirculation Core")) { 
-            stat = stat * 1.05;
-            statExp = statExp * 1.1;
-        }
-        if (augs.includes("Speech Enhancement")) { 
-            stat = stat * 1.1;
-        }
-        if (augs.includes("Speech Processor Implant")) { 
-            stat = stat * 1.2;
-        }
-        if (augs.includes("Enhanced Social Interaction Implant")) {
-            stat = stat * 1.6;
-            statExp = statExp * 1.6;
-        }
-        if (augs.includes("SmartJaw")) {
-            stat = stat * 1.5;
-            statExp = statExp * 1.5;
-        }
-        if (augs.includes("Xanipher")) {
-            stat = stat * 1.2;
-            statExp = statExp * 1.15;
-        }
-        if (augs.includes("nextSENS Gene Modification")) {
-            stat = stat * 1.2;
-        }
-        if (augs.includes("TITN-41 Gene-Modification Injection")) {
-            stat = stat * 1.15;
-            statExp = stat * 1.15;
-        }
-
-        mult.charisma = stat;
-        mult.charismaExp = statExp;
     }
 }
