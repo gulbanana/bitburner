@@ -366,7 +366,7 @@ export class LifeL0 {
         }
 
         // use spare ram to farm hacking skill
-        if (this.shouldFarm()) {
+        if (this.shouldFarmHackingSkill()) {
             let target = 'foodnstuff';
 
             if (this.ns.scriptRunning('dh-control.js', this.ns.getHostname())) {
@@ -522,14 +522,14 @@ export class LifeL0 {
     }
     
     /**********/
-    /* policy */
+    /* POLICY */
     /**********/
 
     shouldBuyNodes() {
         return this.cash <= HACKNET_BUYS_MAX;
     }
 
-    shouldFarm() {
+    shouldFarmHackingSkill() {
         return true;
     }
 
@@ -545,9 +545,35 @@ export class LifeL1 extends LifeL0 {
      */
     constructor(ns, log) {
         super(ns, log);
+
         /** @type {WorkItem} */
         this.lastWork = null;
+
+        /** @type {{[key: string]: boolean}} */
+        this.hadProgram = {};
+        for (let program of programs())
+        {
+            this.hadProgram[program.name] = true;
+        }
+
+        /** @type {string} */
+        this.savingForAug = '';
+
+        /** @type {number} */
+        this.homicides = 0;
+        let factions = this.ns.getCharacterInformation().factions;
+        for (let gang of Gang.getAll()) {
+            if (factions.includes(gang.name)) {
+                this.homicides = Math.max(this.homicides, gang.requiredKarma);
+            }
+        }
+
+        this.log.debug(`assumed starting homicides: ${this.homicides}`);
     }
+
+    /***************************************************************************/
+    /* TICK ITEMS - background checks and tasks, each one executed in sequence */
+    /***************************************************************************/
 
     tickDarkwebPurchases() {
         // buy darkweb router
@@ -568,11 +594,6 @@ export class LifeL1 extends LifeL0 {
                 this.resetHackEval();
             }
         }
-    }
-
-    /** @param {Program} program */
-    hasProgram(program) {
-        return this.ns.fileExists(program.name, 'home');
     }
 
     // fullscreen "work" actions
@@ -644,6 +665,27 @@ export class LifeL1 extends LifeL0 {
         }
     }
 
+    // persists through aug reset, makes early farming better
+    tickUpgradeHomeSystem() {
+        while (this.cash >= this.ns.getUpgradeHomeRamCost()) {
+            this.log.info(`purchasing home RAM upgrade`);
+            this.ns.upgradeHomeRam();
+            this.cash = this.getCash();
+        }
+    }
+
+    tickAcceptInvites() {
+        for (let invite of this.ns.checkFactionInvitations()) {
+            if (this.shouldAcceptInvite(invite)) {
+                this.log.info(`join faction ${invite}`);
+                this.ns.joinFaction(invite);
+            }
+        }
+    }
+
+    /*********************************************************/
+    /* WORK ITEMS - returns a fullscreen activity definition */
+    /*********************************************************/
     selectWork() {
         for (let jobF of [this.workWriteCode, this.workTrainStats, this.workCommitCrimes, this.workJoinCities, this.workForFactions, this.workForCompanies, this.workJoinCompanies]) {
             let job = jobF.bind(this)();
@@ -690,8 +732,84 @@ export class LifeL1 extends LifeL0 {
         return null;
     }
 
-    /** @returns {WorkItem | null} */
     workForFactions() {
+        let factions = Faction.getAll(this.ns).filter(f => f.job != null);
+        this.log.debug(`workable factions: ${factions.map(f => f.name)}`);
+        
+        factions = factions.filter(f => f.reputation < f.maxAugRep());
+        this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
+        let allReqsMet = factions.length == 0;
+
+        factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
+        this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
+        let reqsCouldBeMetAfterDonations = factions.length == 0 && !allReqsMet;
+
+        if (factions.length > 0) {
+            factions.sort((a, b) => a.reputation - b.reputation);
+            this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
+            return new WorkItem('faction-' + factions[0].name, () => this.ns.workForFaction(factions[0].name, factions[0].job), true);
+        }
+
+        if (reqsCouldBeMetAfterDonations && this.cash >= DONATE_AMOUNT) {
+            for (let f of Faction.getAll(this.ns)) {
+                if (f.favor >= FAVOUR_MAX && f.maxAugRep() > f.reputation) {
+                    if (this.ns.donateToFaction(f.name, DONATE_AMOUNT)) {
+                        this.log.info(`donated ${format.money(DONATE_AMOUNT)} to faction ${f}`);
+                        this.cash = this.getCash();
+                        if (this.cash < DONATE_AMOUNT) {
+                            break;
+                        }
+                    } else {
+                        this.log.error(`failed to donate to faction ${f}`);
+                        break;
+                    }
+                }
+            }
+
+            allReqsMet = Faction.getAll(this.ns).filter(f => f.maxAugRep() > f.reputation).length == 0;
+        }
+
+        // if all factions are maxed out, buy some of their augs
+        if (allReqsMet) {
+            this.log.debug(`cash rate: ${format.money(this.cashRate)}/sec`);
+
+            let maxAugCost = this.cashRate * 60 * 60; // an hour's income
+            this.log.debug(`max aug cost: ${format.money(maxAugCost)}`);
+
+            // augs we don't already have
+            let availableAugs = Faction.getAll(this.ns)
+                .map(f => f.augmentations)
+                .reduce((a, b) => a.concat(b), [])
+                .filter(a => !a.owned);
+
+            // most expensive augs first, because the price doubles each time
+            let affordableAugs = availableAugs
+                .filter(a => a.price <= maxAugCost)
+                .sort((a, b) => b.price - a.price);
+
+            if (affordableAugs.length > 0) {
+                this.log.debug("best affordable aug: " + affordableAugs[0]);
+                if (affordableAugs[0].price > this.cash) {
+                    if (this.savingForAug != affordableAugs[0].name) {
+                        this.savingForAug = affordableAugs[0].name;
+                        this.log.info(`saving for aug ${affordableAugs[0]}`);
+                    }
+                }
+
+                for (let a of affordableAugs) {
+                    if (a.price <= this.cash) {
+                        if (this.ns.purchaseAugmentation(a.faction, a.name)) {
+                            this.log.info(`bought aug ${a}`);
+                            this.cash = this.getCash();
+                            this.savingForAug = '';
+                        } else {
+                            this.log.info(`failed to buy aug ${a}`);
+                        }
+                    }
+                }
+            } 
+        }
+
         return null;
     }
 
@@ -713,8 +831,26 @@ export class LifeL1 extends LifeL0 {
     /** @returns {WorkItem | null} */
     workJoinCompanies() {
         return null;
-    }
+    } 
     
+    /**
+     * @param {ICharacterInfo} info
+     * @param {string} name
+     */
+    ensureCity(info, name) {
+        if (info.city != name) {
+            if (this.ns.travelToCity(name)) {
+                this.log.info('travelled to ' + name);
+            } else {
+                this.log.error(`travel to ${name} failed`);
+            }
+        }
+    }
+
+    /*********************/
+    /* misc info lookups */
+    /*********************/
+
     getBestGym() {
         let gs = gyms();
         gs.sort((a, b) => b.price - a.price);
@@ -783,26 +919,23 @@ export class LifeL1 extends LifeL0 {
         mult.charisma = stat;
         mult.charismaExp = statExp;
     }
-   
-    /**
-     * @param {ICharacterInfo} info
-     * @param {string} name
-     */
-    ensureCity(info, name) {
-        if (info.city != name) {
-            if (this.ns.travelToCity(name)) {
-                this.log.info('travelled to ' + name);
-            } else {
-                this.log.error(`travel to ${name} failed`);
-            }
-        }
+
+    /** @param {Program} program */
+    hasProgram(program) {
+        return this.ns.fileExists(program.name, 'home');
     }
 
-    /**********/
-    /* policy */
-    /**********/
+    /*******************/
+    /* POLICY SETTINGS */
+    /*******************/
+
+    /** @param {string} faction */
+    shouldAcceptInvite(faction) {
+        return !Faction.cities().includes(faction) || !Faction.get(this.ns, faction).hasAllAugs();
+    }
 
     shouldBuyNodes() {
+        // return this.cash <= HACKNET_BUYS_MAX;
         return this.ns.getCharacterInformation().bitnode != 4;
     }
 
@@ -810,12 +943,17 @@ export class LifeL1 extends LifeL0 {
         return this.cash >= TRAIN_MIN && this.ns.getCharacterInformation().bitnode == 2;
     }
 
+    // uses home server to weaken DH target
+    shouldFarmHackingSkill() {
+        return true;
+    }
+
     spareRamNeeded() {
         return this.ns.getCharacterInformation().bitnode == 4 ? 64 : 128;
     }
 }
 
-export class LifeL2 extends LifeL1 {
+export class Life extends LifeL1 {
     /** 
      * @param {IGame} ns 
      * @param {Logger} log
@@ -824,28 +962,21 @@ export class LifeL2 extends LifeL1 {
         super(ns, log);
     }
 
-    // persists through aug reset, makes early farming better
-    tickUpgradeHomeSystem() {
-        while (this.cash >= this.ns.getUpgradeHomeRamCost()) {
-            this.log.info(`purchasing home RAM upgrade`);
-            this.ns.upgradeHomeRam();
-            this.cash = this.getCash();
-        }
-    }
-
-    tickAcceptInvites() {
-        for (let invite of this.ns.checkFactionInvitations()) {
-            if (this.shouldAcceptInvite(invite)) {
-                this.log.info(`join faction ${invite}`);
-                this.ns.joinFaction(invite);
+    workWriteCode() {
+        for (let program of programs()) {
+            if (this.hasProgram(program)) {
+                if (!this.hadProgram[program.name]) {
+                    this.hadProgram[program.name] = true;
+                    this.resetHackEval();
+                }    
+            }
+            else if (program.req <= this.skill)  {
+                return new WorkItem('program-' + program.name, () => this.ns.createProgram(program.name), false);
             }
         }
-    }
 
-    /** @param {string} faction */
-    shouldAcceptInvite(faction) {
-        return !Faction.cities().includes(faction);
-    }
+        return null;
+    }  
 
     /** @returns {WorkItem | null} */
     workJoinCities() {
@@ -930,158 +1061,6 @@ export class LifeL2 extends LifeL1 {
                     }
                 }
             }, true);
-        }
-
-        return null;
-    }
-
-    workForFactions() {
-        let factions = Faction.getAll(this.ns);
-        this.log.debug(`current factions: ${factions.map(f => f.name)}`);
-        
-        factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
-        this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
-
-        if (factions.length > 0) {
-            factions.sort((a, b) => a.reputation - b.reputation);
-            this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
-            return new WorkItem('faction-' + factions[0].name, () => {
-                this.ns.workForFaction(factions[0].name, factions[0].job)
-            }, true);
-        }
-
-        return null;
-    }
-}
-
-export class LifeL3 extends LifeL2 {
-    /** 
-     * @param {IGame} ns 
-     * @param {Logger} log
-     */
-    constructor(ns, log) {
-        super(ns, log);
-        
-        /** @type {{[key: string]: boolean}} */
-        this.hadProgram = {};
-        for (let program of programs())
-        {
-            this.hadProgram[program.name] = true;
-        }
-
-        /** @type {string} */
-        this.savingForAug = '';
-
-        /** @type {number} */
-        this.homicides = 0;
-        let factions = this.ns.getCharacterInformation().factions;
-        for (let gang of Gang.getAll()) {
-            if (factions.includes(gang.name)) {
-                this.homicides = Math.max(this.homicides, gang.requiredKarma);
-            }
-        }
-
-        this.log.debug(`assumed starting homicides: ${this.homicides}`);
-    }
-
-    /** @param {string} faction */
-    shouldAcceptInvite(faction) {
-        return !Faction.cities().includes(faction) || !Faction.get(this.ns, faction).hasAllAugs();
-    }
-
-    workWriteCode() {
-        for (let program of programs()) {
-            if (this.hasProgram(program)) {
-                if (!this.hadProgram[program.name]) {
-                    this.hadProgram[program.name] = true;
-                    this.resetHackEval();
-                }    
-            }
-            else if (program.req <= this.skill)  {
-                return new WorkItem('program-' + program.name, () => this.ns.createProgram(program.name), false);
-            }
-        }
-
-        return null;
-    }  
-
-    // L3 override which takes augs into account
-    workForFactions() {
-        let factions = Faction.getAll(this.ns).filter(f => f.job != null);
-        this.log.debug(`workable factions: ${factions.map(f => f.name)}`);
-        
-        factions = factions.filter(f => f.reputation < f.maxAugRep());
-        this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
-        let allReqsMet = factions.length == 0;
-
-        factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
-        this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
-        let reqsCouldBeMetAfterDonations = factions.length == 0 && !allReqsMet;
-
-        if (factions.length > 0) {
-            factions.sort((a, b) => a.reputation - b.reputation);
-            this.log.debug(`factions sorted by rep: ${factions.map(f => f.name)}`);
-            return new WorkItem('faction-' + factions[0].name, () => this.ns.workForFaction(factions[0].name, factions[0].job), true);
-        }
-
-        if (reqsCouldBeMetAfterDonations && this.cash >= DONATE_AMOUNT) {
-            for (let f of Faction.getAll(this.ns)) {
-                if (f.favor >= FAVOUR_MAX && f.maxAugRep() > f.reputation) {
-                    if (this.ns.donateToFaction(f.name, DONATE_AMOUNT)) {
-                        this.log.info(`donated ${format.money(DONATE_AMOUNT)} to faction ${f}`);
-                        this.cash = this.getCash();
-                        if (this.cash < DONATE_AMOUNT) {
-                            break;
-                        }
-                    } else {
-                        this.log.error(`failed to donate to faction ${f}`);
-                        break;
-                    }
-                }
-            }
-
-            allReqsMet = Faction.getAll(this.ns).filter(f => f.maxAugRep() > f.reputation).length == 0;
-        }
-
-        // if all factions are maxed out, buy some of their augs
-        if (allReqsMet) {
-            this.log.debug(`cash rate: ${format.money(this.cashRate)}/sec`);
-
-            let maxAugCost = this.cashRate * 60 * 60; // an hour's income
-            this.log.debug(`max aug cost: ${format.money(maxAugCost)}`);
-
-            // augs we don't already have
-            let availableAugs = Faction.getAll(this.ns)
-                .map(f => f.augmentations)
-                .reduce((a, b) => a.concat(b), [])
-                .filter(a => !a.owned);
-
-            // most expensive augs first, because the price doubles each time
-            let affordableAugs = availableAugs
-                .filter(a => a.price <= maxAugCost)
-                .sort((a, b) => b.price - a.price);
-
-            if (affordableAugs.length > 0) {
-                this.log.debug("best affordable aug: " + affordableAugs[0]);
-                if (affordableAugs[0].price > this.cash) {
-                    if (this.savingForAug != affordableAugs[0].name) {
-                        this.savingForAug = affordableAugs[0].name;
-                        this.log.info(`saving for aug ${affordableAugs[0]}`);
-                    }
-                }
-
-                for (let a of affordableAugs) {
-                    if (a.price <= this.cash) {
-                        if (this.ns.purchaseAugmentation(a.faction, a.name)) {
-                            this.log.info(`bought aug ${a}`);
-                            this.cash = this.getCash();
-                            this.savingForAug = '';
-                        } else {
-                            this.log.info(`failed to buy aug ${a}`);
-                        }
-                    }
-                }
-            } 
         }
 
         return null;

@@ -1,8 +1,5 @@
 import { Logger } from './lib-log.js';
-//import { LifeL0 as Life } from './lib-life.js';
-//import { LifeL1 as Life } from './lib-life.js';
-//import { LifeL2 as Life } from './lib-life.js';
-import { LifeL3 as Life } from './lib-life.js';
+import { Life } from './lib-life.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
