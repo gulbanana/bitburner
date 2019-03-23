@@ -13,239 +13,11 @@ const STAT_GOAL_BASE =                  90;
 const DARKWEB_MIN =                 200000;
 const TRAIN_MIN =                  5000000;
 const COMPANY_REP_MAX =             200000;  // level required for most factions
-const FAVOUR_MAX =                     150;   // level required for donations
 const CITY_MONEY_REQ =            50200000; // volhaven 50m + travel 200k
 const DONATE_AMOUNT =        1000000000000;
 const TRAVEL_MIN =                  200000;
 
-class WorkItem {
-    /**
-     * @param {string} name
-     * @param {() => void | null} doWork
-     * @param {boolean} isRep
-     */
-    constructor(name, doWork, isRep) {
-        this.name = name;
-        this.doWork = doWork;
-        this.isRep = isRep;
-    }
-}
-
-class Faction {
-    /**
-     * @param {string} name
-     * @param {number} rep
-     * @param {number} fav
-     * @param {number} fvg
-     * @param {WorkName | null} job
-     * @param {Augmentation[]} augs
-     */
-    constructor(name, rep, fav, fvg, job, augs) {
-        this.name = name;
-        this.reputation = rep;
-        this.favor = fav;
-        this.favorGain = fvg;
-        this.job = job;
-        this.augmentations = augs;
-    }
-
-    static cities() {
-        return ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'];
-    }
-
-    static security() {
-        return ['Slum Snakes', 'Tetrads'];
-    }
-
-    static gangs() {
-        return [
-            'Slum Snakes', 'Tetrads', 'The Syndicate', 'The Dark Army', 'Speakers for the Dead',
-            'NiteSec', 'The Black Hand'
-        ];
-    }
-
-    static companies() {
-        return Object.getOwnPropertyNames(Company.factions());
-    }
-
-    /**
-     * @param {IGame} ns
-     * @param {string} name
-     * @returns Faction
-     */
-    static get(ns, name) {
-        let info = ns.getCharacterInformation();
-        let rep = ns.getFactionRep(name);
-        let fav = ns.getFactionFavor(name);
-        let fvg = ns.getFactionFavorGain(name);
-        /** @type {WorkName | null} */
-        let job = Faction.security().includes(name) ? 'security' : 'hacking';
-        if (info.bitnode == 2 && Faction.gangs().includes(name))
-        {
-            job = null;
-        }
-        let augInfo = ns.getOwnedAugmentations(true);
-        let augs = ns.getAugmentationsFromFaction(name).map(a => {
-            let [aRep, aPrc] = ns.getAugmentationCost(a);
-            let has = augInfo.includes(a);
-            return new Augmentation(a, name, aRep, aPrc, has);
-        })
-        return new Faction(name, rep, fav, fvg, job, augs);
-    }
-    /**
-     * @param {IGame} ns
-     * @returns Faction[]
-     */
-    static getAll(ns) {
-        let info = ns.getCharacterInformation();
-        return info.factions.map(f => Faction.get(ns, f));
-    }
-
-    maxAugRep() {
-        return this.augmentations
-            .filter(a => !a.owned)
-            .map(a => a.requiredReputation)
-            .reduce((a, b) => Math.max(a, b), 0);
-    }
-
-    hasAllAugs() {
-        return this.augmentations
-        .map(a => a.owned)
-        .reduce((a, b) => a && b, true);
-    }
-
-    toString() {
-        return this.name;
-    }
-}
-
-class Gang {
-    /**
-     * @param {string} name
-     * @param {number} requiredKarma
-     * @param {number} requiredStats
-     * @param {string|null} requiredLocation
-     */
-    constructor(name, requiredKarma, requiredStats, requiredLocation) {
-        this.name = name;
-        this.requiredKarma = requiredKarma;
-        this.requiredStats = requiredStats;
-        this.requiredLocation = requiredLocation;
-    }
-
-    toString() {
-        return this.name;
-    }
-
-    static getAll() {
-        return [
-            new Gang('Slum Snakes', 9, 30, null),
-            new Gang('Tetrads', 18, 75, 'Chongqing'),
-            new Gang('Speakers for the Dead', 45, 300, null),
-            new Gang('The Dark Army', 45, 300, 'Chongqing'),
-            new Gang('The Syndicate', 90, 200, 'Sector-12'),
-            // no silhouette - special company reqs
-        ];
-    }
-}
-
-class Company {
-    /**
-     * @param {string} name
-     * @param {number} rep
-     * @param {number} fav
-     * @param {number} fvg
-     * @param {string} faction
-     * @param {boolean} employed
-     */
-    constructor(name, rep, fav, fvg, faction, employed) {
-        this.name = name;
-        this.reputation = rep;
-        this.favor = fav;
-        this.favorGain = fvg;
-        this.faction = faction;
-        this.employed = employed;
-    }
-
-    toString() {
-        return this.name;
-    }
-
-    /**
-     * @param {IGame} ns
-     * @returns Company[]
-     */
-    static getCurrent(ns) {
-        let info = ns.getCharacterInformation();
-        let cs = [];
-        for (let i = 0; i < info.jobs.length; i++) {
-            let c = info.jobs[i];
-            let rep = ns.getCompanyRep(c);
-            let fav = ns.getCompanyFavor(c);
-            let fvg = ns.getCompanyFavorGain(c);
-            cs.push(new Company(c, rep, fav, fvg, Company.factions()[c], true));
-        }
-        return cs;
-    }
-
-    /**
-     * @param {IGame} ns
-     * @returns Company[]
-     */
-    static getAll(ns) {
-        let info = ns.getCharacterInformation();
-        let cs = [];
-        for (let c of Faction.companies()) {
-            let rep = ns.getCompanyRep(c);
-            let fav = ns.getCompanyFavor(c);
-            let fvg = ns.getCompanyFavorGain(c);
-            cs.push(new Company(c, rep, fav, fvg, Company.factions()[c], info.jobs.includes(c)));
-        }
-        return cs;
-    }
-
-    static factions() {
-        return {
-            'Bachman & Associates': 'Bachman & Associates',
-            'ECorp': 'ECorp',
-            'MegaCorp': 'MegaCorp',
-            'KuaiGong International': 'KuaiGong International',
-            'Four Sigma': 'Four Sigma',
-            'NWO': 'NWO',
-            'Blade Industries': 'Blade Industries',
-            'OmniTek Incorporated': 'OmniTek Incorporated',
-            'Clarke Incorporated': 'Clarke Incorporated',
-            'Fulcrum Technologies': 'Fulcrum Secret Technologies',
-        };
-    }
-}
-
-class Augmentation {
-    /**
-     * @param {string} name
-     * @param {string} fac
-     * @param {number} rep
-     * @param {number} prc
-     * @param {boolean} has
-     */
-    constructor(name, fac, rep, prc, has) {
-        this.name = name;
-        this.faction = fac;
-        this.requiredReputation = rep;
-        this.price = prc;
-        this.owned = has;
-    }
-
-    toString() {
-        if (this.owned) {
-            return `${this.name} (OWNED)`
-        } else {
-            return `${this.name} (${format.money(this.price)})`
-        }
-    }
-}
-
-export class LifeL0 {
+export class Life {
     /** 
      * @param {IGame} ns 
      * @param {Logger} log
@@ -270,14 +42,31 @@ export class LifeL0 {
         }
         catch (error) { }
         log.debug('market access: ' + this.marketAccess);
-    }
 
-    // singularity functions available with various levels of Source-File 4
-    tickDarkwebPurchases() { }
-    tickPerformWork() { }
-    tickUpgradeHomeSystem() { }
-    tickAcceptInvites() { }
-    tickJoinFactions() { }
+        /** @type {WorkItem} */
+        this.lastWork = null;
+
+        /** @type {{[key: string]: boolean}} */
+        this.hadProgram = {};
+        for (let program of programs())
+        {
+            this.hadProgram[program.name] = true;
+        }
+
+        /** @type {string} */
+        this.savingForAug = '';
+
+        /** @type {number} */
+        this.homicides = 0;
+        let factions = this.ns.getCharacterInformation().factions;
+        for (let gang of Gang.getAll()) {
+            if (factions.includes(gang.name)) {
+                this.homicides = Math.max(this.homicides, gang.requiredKarma);
+            }
+        }
+
+        this.log.debug(`assumed starting homicides: ${this.homicides}`);
+    }
 
     async tick() {
         this.skill = this.ns.getHackingLevel();
@@ -294,6 +83,10 @@ export class LifeL0 {
         this.lastCash = this.getCash();
         return this.nextTickLength;
     }
+
+    /***************************************************************************/
+    /* TICK ITEMS - background checks and tasks, each one executed in sequence */
+    /***************************************************************************/
 
     async tickManageScripts() {
         // in the early game, buy a bunch of Hacknet nodes
@@ -389,191 +182,6 @@ export class LifeL0 {
             this.ensureKilled('farm-worker.js');
         }
     }
-
-    /********************/
-    /* script utilities */
-    /********************/
-
-    /**
-     * @param {string} script
-     */
-    async ensureRunning(script) {
-        if (!this.ns.scriptRunning(script, this.ns.getHostname())) {    
-            await this.ns.exec(script, this.ns.getHostname(), 1);
-            this.log.info(`run ${script} -t ${1}`);
-        }
-    }
-
-    /**
-     * @param {string} script
-     * @param {string} arg
-     * @param {boolean} [maxThreads]
-     */
-    async ensureRunningWithArg(script, arg, maxThreads) {
-        if (!this.ns.isRunning(script, this.ns.getHostname(), arg)) {   
-            // not running with right arg
-            if (this.ns.scriptRunning(script, this.ns.getHostname())) { 
-                // running with wrong arg
-                await this.ensureKilled(script);
-            } else {
-                // not running at all
-                let threads = 1;
-                if (maxThreads) {
-                    threads = this.getMaxThreads(script);
-                    if (threads <= 0) return;
-                }
-        
-                await this.ns.exec(script, this.ns.getHostname(), threads, arg);
-                this.log.info(`run ${script} -t ${threads} ${arg}`);
-            }
-        }
-    }
-
-    /**
-     * @param {string} script
-     */
-    async ensureKilled(script) {
-        let killed = false;
-        while (this.ns.scriptRunning(script, 'home')) {
-            if (!killed) {
-                killed = this.ns.scriptKill(script, 'home');
-                if (killed) {
-                    this.log.info('stopped ' + script);
-                } else {
-                    this.log.error('failed to kill script ' + script + 'on home');
-                    return;    
-                }
-            }
-
-            await this.ns.sleep(1000);
-        }
-    }
-    
-    /** @param {string} script */
-    async runOnce(script) {
-        if (!this.ns.isRunning(script, 'home')) {
-            await this.ns.exec(script, 'home', 1);
-            this.log.info(`started ${script}`);
-        }
-    }
-
-    /******************/
-    /* info utilities */
-    /******************/
-
-    getCash() {
-        return this.ns.getServerMoneyAvailable('home');
-    }
-
-    getFreeRam() {
-        let ram = this.ns.getServerRam('home');
-        return ram[0] - ram[1];
-    }
-
-    /** @param {string} script */
-    getMaxThreads(script) {
-        let available = this.getFreeRam() - this.spareRamNeeded(); // keep a bunch for maintenance scripts
-        let cost = this.ns.getScriptRam(script, 'home');
-        return Math.floor(available / cost);
-    }
-
-    /******************************/
-    /* hack architecture controls */
-    /******************************/
-    resetHackEval() {
-        this.lastEval = 1;
-    }
-
-    dhRunning() {
-        return this.ns.scriptRunning('dh-control.js', 'home');
-    }
-    
-    async dhStart() {
-        this.log.debug('starting distributed-hack architecture');
-        return await this.ns.exec('dh-eval.js', 'home', 1, 'autostart');
-    }
-
-    async dhStop() {
-        if (this.getFreeRam() < this.ns.getScriptRam('dh-stop.js')) {
-            await this.ensureKilled('dh-control.js');
-        }
-
-        this.log.debug('stopping distributed-hack architecture');
-        return await this.ns.exec('dh-stop.js', 'home', 1);
-    }
-
-    msRunning() {
-        let servers = this.ns.getPurchasedServers();
-        if (servers.length == 0) return false;
-        let server1 = 'bot0'; // servers[0]; - wrong because it changes
-        let top = this.ns.ps(server1);
-        if (top.length == 0) return false;
-        return top[0].filename.startsWith('ms');
-    }
-
-    async msStart() {
-        this.log.debug('starting mega-server architecture');
-        return await this.ns.exec('ms-eval.js', 'home', 1, 'autostart');
-    }
-
-    async msStop() {
-        this.log.debug('stopping mega-server architecture');
-        return await this.ns.exec('ms-stop.js', 'home', 1);
-    }
-    
-    /**********/
-    /* POLICY */
-    /**********/
-
-    shouldBuyNodes() {
-        return this.cash <= HACKNET_BUYS_MAX;
-    }
-
-    shouldFarmHackingSkill() {
-        return true;
-    }
-
-    spareRamNeeded() {
-        return 128;
-    }
-}
-
-export class LifeL1 extends LifeL0 {
-    /** 
-     * @param {IGame} ns 
-     * @param {Logger} log
-     */
-    constructor(ns, log) {
-        super(ns, log);
-
-        /** @type {WorkItem} */
-        this.lastWork = null;
-
-        /** @type {{[key: string]: boolean}} */
-        this.hadProgram = {};
-        for (let program of programs())
-        {
-            this.hadProgram[program.name] = true;
-        }
-
-        /** @type {string} */
-        this.savingForAug = '';
-
-        /** @type {number} */
-        this.homicides = 0;
-        let factions = this.ns.getCharacterInformation().factions;
-        for (let gang of Gang.getAll()) {
-            if (factions.includes(gang.name)) {
-                this.homicides = Math.max(this.homicides, gang.requiredKarma);
-            }
-        }
-
-        this.log.debug(`assumed starting homicides: ${this.homicides}`);
-    }
-
-    /***************************************************************************/
-    /* TICK ITEMS - background checks and tasks, each one executed in sequence */
-    /***************************************************************************/
 
     tickDarkwebPurchases() {
         // buy darkweb router
@@ -695,10 +303,21 @@ export class LifeL1 extends LifeL0 {
         return new WorkItem('nothing', null, false);
     }
 
-    /** @returns {WorkItem | null} */
     workWriteCode() {
+        for (let program of programs()) {
+            if (this.hasProgram(program)) {
+                if (!this.hadProgram[program.name]) {
+                    this.hadProgram[program.name] = true;
+                    this.resetHackEval();
+                }    
+            }
+            else if (program.req <= this.skill)  {
+                return new WorkItem('program-' + program.name, () => this.ns.createProgram(program.name), false);
+            }
+        }
+
         return null;
-    }
+    }  
 
     workTrainStats() {
         let info = this.ns.getCharacterInformation();
@@ -733,6 +352,8 @@ export class LifeL1 extends LifeL0 {
     }
 
     workForFactions() {
+        let favMax = favourNeededForDonation(this.ns);
+
         let factions = Faction.getAll(this.ns).filter(f => f.job != null);
         this.log.debug(`workable factions: ${factions.map(f => f.name)}`);
         
@@ -740,8 +361,8 @@ export class LifeL1 extends LifeL0 {
         this.log.debug(`factions with aug reqs not met: ${factions.map(f => f.name)}`);
         let allReqsMet = factions.length == 0;
 
-        factions = factions.filter(f => f.favor + f.favorGain < FAVOUR_MAX);
-        this.log.debug(`factions with favour < ${FAVOUR_MAX}: ${factions.map(f => f.name)}`);
+        factions = factions.filter(f => f.favor + f.favorGain < favMax);
+        this.log.debug(`factions with favour < ${favMax}: ${factions.map(f => f.name)}`);
         let reqsCouldBeMetAfterDonations = factions.length == 0 && !allReqsMet;
 
         if (factions.length > 0) {
@@ -752,7 +373,7 @@ export class LifeL1 extends LifeL0 {
 
         if (reqsCouldBeMetAfterDonations && this.cash >= DONATE_AMOUNT) {
             for (let f of Faction.getAll(this.ns)) {
-                if (f.favor >= FAVOUR_MAX && f.maxAugRep() > f.reputation) {
+                if (f.favor >= favMax && f.maxAugRep() > f.reputation) {
                     if (this.ns.donateToFaction(f.name, DONATE_AMOUNT)) {
                         this.log.info(`donated ${format.money(DONATE_AMOUNT)} to faction ${f}`);
                         this.cash = this.getCash();
@@ -813,25 +434,131 @@ export class LifeL1 extends LifeL0 {
         return null;
     }
 
-    /** @returns {WorkItem | null} */
     workForCompanies() {
+        let info = this.ns.getCharacterInformation();
+
+        let companies = Company.getCurrent(this.ns);
+        this.log.debug(`current companies: ${companies}`);
+
+        companies = companies.filter(c => !info.factions.includes(c.faction));
+        this.log.debug(`companies without faction membership: ${companies}`);
+
+        companies = companies.filter(c => c.reputation < COMPANY_REP_MAX);
+        this.log.debug(`companies with reputation < ${COMPANY_REP_MAX}: ${companies}`);
+
+        if (companies.length > 0) {
+            companies.sort((a, b) => a.reputation - b.reputation);
+            this.log.debug(`companies sorted by rep: ${companies}`);
+
+            let c = companies[0].name;
+            return new WorkItem('company-' + c, () => {
+                if (this.lastWork && this.lastWork.name == 'company-' + c) {
+                    this.log.debug(`already working for ${c}`);
+                    if (this.ns.applyToCompany(c, 'software')) {
+                        this.log.info(`promoted by ${c}`);
+                    }
+                    this.ns.workForCompany();
+                } else {
+                    this.log.debug(`not currently working for ${c}`);
+                    this.ns.applyToCompany(c, 'software');
+                    if (!this.ns.workForCompany()) {
+                        this.log.error(`rejected by ${c}`);
+                    }
+                }
+            }, true);
+        }
+
         return null;
     }
 
     /** @returns {WorkItem | null} */
     workCommitCrimes() {
+        if (!this.shouldCommitCrimes()) {
+            return null;
+        }
+
+        let info = this.ns.getCharacterInformation();
+        let stats = this.ns.getStats();
+
+        let gangs = Gang.getAll().filter(g => !info.factions.includes(g.name)).sort((a, b) => a.requiredKarma - b.requiredKarma);
+        this.log.debug(`unjoined gangs: ${gangs}`);
+
+        if (gangs.length > 0) {
+            gangs = gangs.filter(g => g.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength));
+            this.log.debug(`gangs with high enough combat stats: ${gangs}`);
+        }
+
+        if (gangs.length > 0) {
+            gangs = gangs.filter(g => g.requiredKarma > this.homicides);
+            this.log.debug(`gangs needing lower karma: ${gangs}`);
+        }
+        
+        for (let gang of gangs) {
+            if (gang.requiredLocation == null || this.cash >= TRAVEL_MIN) {
+                return new WorkItem('crime-homicide', () => {
+                    if (gang.requiredLocation != null) {
+                        this.ensureCity(this.ns.getCharacterInformation(), gang.requiredLocation);
+                    }
+
+                    this.nextTickLength = this.ns.commitCrime('homicide') + 1000;
+                }, false);
+            }
+        }
+
         return null;
     }
 
+    // XXX shouldn't really be work
     /** @returns {WorkItem | null} */
-    workJoinCities() {        
+    workJoinCities() {
+        if (this.cash < CITY_MONEY_REQ) {
+            return null;
+        }
+
+        let info = this.ns.getCharacterInformation();
+        let joins = info.factions;
+        let invites = this.ns.checkFactionInvitations();
+
+        /** @type {{[key: string]: string[]}} */
+        let preclusions = {
+            'Sector-12': ['Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'], 
+            'Aevum':     ['Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'], 
+            'Chongqing': ['Sector-12', 'Aevum', 'Volhaven'], 
+            'New Tokyo': ['Sector-12', 'Aevum', 'Volhaven'], 
+            'Ishima':    ['Sector-12', 'Aevum', 'Volhaven'], 
+            'Volhaven':  ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima']
+        };
+
+        for (let city of Faction.cities()) {
+            if (info.city != city &&
+                !joins.includes(city) && 
+                !invites.includes(city) && 
+                !preclusions[city].map(joins.includes.bind(joins)).reduce((a, b) => a || b, false)) {
+                    this.log.info(`Travelling to ${city} for a faction invite.`);
+                    this.ns.travelToCity(city);
+                    return null;
+            }
+        }
+
+        let joinedCities = Faction.getAll(this.ns).filter(f => Faction.cities().includes(f.name));
         return null;
     }
 
+    // XXX shouldn't really be work
     /** @returns {WorkItem | null} */
     workJoinCompanies() {
+        // when we've run out of work to do, take another job
+        let companies = Company.getAll(this.ns).filter(c => !c.employed);
+        if (companies.length > 0) {
+            if (this.ns.applyToCompany(companies[0].name, 'software')) {
+                this.log.info(`now employed by ${companies[0]}`);
+            } else {
+                this.log.error(`rejected by ${companies[0]}`);
+            }
+        }
+
         return null;
-    } 
+    }
     
     /**
      * @param {ICharacterInfo} info
@@ -847,9 +574,116 @@ export class LifeL1 extends LifeL0 {
         }
     }
 
-    /*********************/
-    /* misc info lookups */
-    /*********************/
+    /*******************/
+    /* SCRIPT CONTROLS */
+    /*******************/
+
+    /** @param {string} script */
+    async ensureRunning(script) {
+        if (!this.ns.scriptRunning(script, this.ns.getHostname())) {    
+            await this.ns.exec(script, this.ns.getHostname(), 1);
+            this.log.info(`run ${script} -t ${1}`);
+        }
+    }
+
+    /**
+     * @param {string} script
+     * @param {string} arg
+     * @param {boolean} [maxThreads]
+     */
+    async ensureRunningWithArg(script, arg, maxThreads) {
+        if (!this.ns.isRunning(script, this.ns.getHostname(), arg)) {   
+            // not running with right arg
+            if (this.ns.scriptRunning(script, this.ns.getHostname())) { 
+                // running with wrong arg
+                await this.ensureKilled(script);
+            } else {
+                // not running at all
+                let threads = 1;
+                if (maxThreads) {
+                    threads = this.getMaxThreads(script);
+                    if (threads <= 0) return;
+                }
+        
+                await this.ns.exec(script, this.ns.getHostname(), threads, arg);
+                this.log.info(`run ${script} -t ${threads} ${arg}`);
+            }
+        }
+    }
+
+    /** @param {string} script */
+    async ensureKilled(script) {
+        let killed = false;
+        while (this.ns.scriptRunning(script, 'home')) {
+            if (!killed) {
+                killed = this.ns.scriptKill(script, 'home');
+                if (killed) {
+                    this.log.info('stopped ' + script);
+                } else {
+                    this.log.error('failed to kill script ' + script + 'on home');
+                    return;    
+                }
+            }
+
+            await this.ns.sleep(1000);
+        }
+    }
+    
+    /** @param {string} script */
+    async runOnce(script) {
+        if (!this.ns.isRunning(script, 'home')) {
+            await this.ns.exec(script, 'home', 1);
+            this.log.info(`started ${script}`);
+        }
+    }
+
+    /*****************/
+    /* HACK CONTROLS */
+    /*****************/
+    resetHackEval() {
+        this.lastEval = 1;
+    }
+
+    dhRunning() {
+        return this.ns.scriptRunning('dh-control.js', 'home');
+    }
+    
+    async dhStart() {
+        this.log.debug('starting distributed-hack architecture');
+        return await this.ns.exec('dh-eval.js', 'home', 1, 'autostart');
+    }
+
+    async dhStop() {
+        if (this.getFreeRam() < this.ns.getScriptRam('dh-stop.js')) {
+            await this.ensureKilled('dh-control.js');
+        }
+
+        this.log.debug('stopping distributed-hack architecture');
+        return await this.ns.exec('dh-stop.js', 'home', 1);
+    }
+
+    msRunning() {
+        let servers = this.ns.getPurchasedServers();
+        if (servers.length == 0) return false;
+        let server1 = 'bot0'; // servers[0]; - wrong because it changes
+        let top = this.ns.ps(server1);
+        if (top.length == 0) return false;
+        return top[0].filename.startsWith('ms');
+    }
+
+    async msStart() {
+        this.log.debug('starting mega-server architecture');
+        return await this.ns.exec('ms-eval.js', 'home', 1, 'autostart');
+    }
+
+    async msStop() {
+        this.log.debug('stopping mega-server architecture');
+        return await this.ns.exec('ms-stop.js', 'home', 1);
+    }
+
+    /****************/
+    /* INFO HELPERS */
+    /****************/
 
     getBestGym() {
         let gs = gyms();
@@ -861,6 +695,22 @@ export class LifeL1 extends LifeL0 {
         let us = universities();
         us.sort((a, b) => b.leadershipPrice - a.leadershipPrice);
         return us[0];
+    }
+
+    getCash() {
+        return this.ns.getServerMoneyAvailable('home');
+    }
+
+    getFreeRam() {
+        let ram = this.ns.getServerRam('home');
+        return ram[0] - ram[1];
+    }
+
+    /** @param {string} script */
+    getMaxThreads(script) {
+        let available = this.getFreeRam() - this.spareRamNeeded(); // keep a bunch for maintenance scripts
+        let cost = this.ns.getScriptRam(script, 'home');
+        return Math.floor(available / cost);
     }
 
     /** @param {ICharacterInfoMultipliers} mult */
@@ -953,153 +803,239 @@ export class LifeL1 extends LifeL0 {
     }
 }
 
-export class Life extends LifeL1 {
-    /** 
-     * @param {IGame} ns 
-     * @param {Logger} log
+/** @param {IGame} ns */
+export function favourNeededForDonation(ns) {
+    let info = ns.getCharacterInformation();
+    if (info.bitnode == 3) {
+        return 75;
+    } else {
+        return 150;
+    }
+}
+
+export class Faction {
+    /**
+     * @param {string} name
+     * @param {number} rep
+     * @param {number} fav
+     * @param {number} fvg
+     * @param {WorkName | null} job
+     * @param {Augmentation[]} augs
      */
-    constructor(ns, log) {
-        super(ns, log);
+    constructor(name, rep, fav, fvg, job, augs) {
+        this.name = name;
+        this.reputation = rep;
+        this.favor = fav;
+        this.favorGain = fvg;
+        this.job = job;
+        this.augmentations = (name == 'Aevum') ? [] : augs;
     }
 
-    workWriteCode() {
-        for (let program of programs()) {
-            if (this.hasProgram(program)) {
-                if (!this.hadProgram[program.name]) {
-                    this.hadProgram[program.name] = true;
-                    this.resetHackEval();
-                }    
-            }
-            else if (program.req <= this.skill)  {
-                return new WorkItem('program-' + program.name, () => this.ns.createProgram(program.name), false);
-            }
+    static cities() {
+        return ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'];
+    }
+
+    static security() {
+        return ['Slum Snakes', 'Tetrads'];
+    }
+
+    static gangs() {
+        return [
+            'Slum Snakes', 'Tetrads', 'The Syndicate', 'The Dark Army', 'Speakers for the Dead',
+            'NiteSec', 'The Black Hand'
+        ];
+    }
+
+    static companies() {
+        return Object.getOwnPropertyNames(Company.factions());
+    }
+
+    /**
+     * @param {IGame} ns
+     * @param {string} name
+     * @returns Faction
+     */
+    static get(ns, name) {
+        let info = ns.getCharacterInformation();
+        let rep = ns.getFactionRep(name);
+        let fav = ns.getFactionFavor(name);
+        let fvg = ns.getFactionFavorGain(name);
+        /** @type {WorkName | null} */
+        let job = Faction.security().includes(name) ? 'security' : 'hacking';
+        if (info.bitnode == 2 && Faction.gangs().includes(name))
+        {
+            job = null;
         }
+        let augInfo = ns.getOwnedAugmentations(true);
+        let augs = ns.getAugmentationsFromFaction(name).map(a => {
+            let [aRep, aPrc] = ns.getAugmentationCost(a);
+            let has = augInfo.includes(a);
+            return new Augmentation(a, name, aRep, aPrc, has);
+        })
+        return new Faction(name, rep, fav, fvg, job, augs);
+    }
+    /**
+     * @param {IGame} ns
+     * @returns Faction[]
+     */
+    static getAll(ns) {
+        let info = ns.getCharacterInformation();
+        return info.factions.map(f => Faction.get(ns, f));
+    }
 
-        return null;
-    }  
+    maxAugRep() {
+        return this.augmentations
+            .filter(a => !a.owned)
+            .map(a => a.requiredReputation)
+            .reduce((a, b) => Math.max(a, b), 0);
+    }
 
-    /** @returns {WorkItem | null} */
-    workJoinCities() {
-        if (this.cash < CITY_MONEY_REQ) {
-            return;
+    hasAllAugs() {
+        return this.augmentations
+        .map(a => a.owned)
+        .reduce((a, b) => a && b, true);
+    }
+
+    toString() {
+        return this.name;
+    }
+}
+
+export class Augmentation {
+    /**
+     * @param {string} name
+     * @param {string} fac
+     * @param {number} rep
+     * @param {number} prc
+     * @param {boolean} has
+     */
+    constructor(name, fac, rep, prc, has) {
+        this.name = name;
+        this.faction = fac;
+        this.requiredReputation = rep;
+        this.price = prc;
+        this.owned = has;
+    }
+
+    toString() {
+        if (this.owned) {
+            return `${this.name} (OWNED)`
+        } else {
+            return `${this.name} (${format.money(this.price)})`
         }
+    }
+}
 
-        let info = this.ns.getCharacterInformation();
-        let joins = info.factions;
-        let invites = this.ns.checkFactionInvitations();
+class Gang {
+    /**
+     * @param {string} name
+     * @param {number} requiredKarma
+     * @param {number} requiredStats
+     * @param {string|null} requiredLocation
+     */
+    constructor(name, requiredKarma, requiredStats, requiredLocation) {
+        this.name = name;
+        this.requiredKarma = requiredKarma;
+        this.requiredStats = requiredStats;
+        this.requiredLocation = requiredLocation;
+    }
 
-        /** @type {{[key: string]: string[]}} */
-        let preclusions = {
-            'Sector-12': ['Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'], 
-            'Aevum':     ['Chongqing', 'New Tokyo', 'Ishima', 'Volhaven'], 
-            'Chongqing': ['Sector-12', 'Aevum', 'Volhaven'], 
-            'New Tokyo': ['Sector-12', 'Aevum', 'Volhaven'], 
-            'Ishima':    ['Sector-12', 'Aevum', 'Volhaven'], 
-            'Volhaven':  ['Sector-12', 'Aevum', 'Chongqing', 'New Tokyo', 'Ishima']
+    toString() {
+        return this.name;
+    }
+
+    static getAll() {
+        return [
+            new Gang('Slum Snakes', 9, 30, null),
+            new Gang('Tetrads', 18, 75, 'Chongqing'),
+            new Gang('Speakers for the Dead', 45, 300, null),
+            new Gang('The Dark Army', 45, 300, 'Chongqing'),
+            new Gang('The Syndicate', 90, 200, 'Sector-12'),
+            // no silhouette - special company reqs
+        ];
+    }
+}
+
+class Company {
+    /**
+     * @param {string} name
+     * @param {number} rep
+     * @param {number} fav
+     * @param {number} fvg
+     * @param {string} faction
+     * @param {boolean} employed
+     */
+    constructor(name, rep, fav, fvg, faction, employed) {
+        this.name = name;
+        this.reputation = rep;
+        this.favor = fav;
+        this.favorGain = fvg;
+        this.faction = faction;
+        this.employed = employed;
+    }
+
+    toString() {
+        return this.name;
+    }
+
+    /**
+     * @param {IGame} ns
+     * @returns Company[]
+     */
+    static getCurrent(ns) {
+        let info = ns.getCharacterInformation();
+        let cs = [];
+        for (let i = 0; i < info.jobs.length; i++) {
+            let c = info.jobs[i];
+            let rep = ns.getCompanyRep(c);
+            let fav = ns.getCompanyFavor(c);
+            let fvg = ns.getCompanyFavorGain(c);
+            cs.push(new Company(c, rep, fav, fvg, Company.factions()[c], true));
+        }
+        return cs;
+    }
+
+    /**
+     * @param {IGame} ns
+     * @returns Company[]
+     */
+    static getAll(ns) {
+        let info = ns.getCharacterInformation();
+        let cs = [];
+        for (let c of Faction.companies()) {
+            let rep = ns.getCompanyRep(c);
+            let fav = ns.getCompanyFavor(c);
+            let fvg = ns.getCompanyFavorGain(c);
+            cs.push(new Company(c, rep, fav, fvg, Company.factions()[c], info.jobs.includes(c)));
+        }
+        return cs;
+    }
+
+    static factions() {
+        return {
+            'Bachman & Associates': 'Bachman & Associates',
+            'ECorp': 'ECorp',
+            'MegaCorp': 'MegaCorp',
+            'KuaiGong International': 'KuaiGong International',
+            'Four Sigma': 'Four Sigma',
+            'NWO': 'NWO',
+            'Blade Industries': 'Blade Industries',
+            'OmniTek Incorporated': 'OmniTek Incorporated',
+            'Clarke Incorporated': 'Clarke Incorporated',
+            'Fulcrum Technologies': 'Fulcrum Secret Technologies',
         };
-
-        for (let city of Faction.cities()) {
-            if (info.city != city &&
-                !joins.includes(city) && 
-                !invites.includes(city) && 
-                !preclusions[city].map(joins.includes.bind(joins)).reduce((a, b) => a || b, false)) {
-                    this.log.info(`Travelling to ${city} for a faction invite.`);
-                    this.ns.travelToCity(city);
-                    return null;
-            }
-        }
-
-        let joinedCities = Faction.getAll(this.ns).filter(f => Faction.cities().includes(f.name));
-        return null;
     }
+}
 
-    /** @returns {WorkItem | null} */
-    workJoinCompanies() {
-        // when we've run out of work to do, take another job
-        let companies = Company.getAll(this.ns).filter(c => !c.employed);
-        if (companies.length > 0) {
-            if (this.ns.applyToCompany(companies[0].name, 'software')) {
-                this.log.info(`now employed by ${companies[0]}`);
-            } else {
-                this.log.error(`rejected by ${companies[0]}`);
-            }
-        }
-
-        return null;
-    }
-
-    /** @returns {WorkItem | null} */
-    workForCompanies() {
-        let info = this.ns.getCharacterInformation();
-
-        let companies = Company.getCurrent(this.ns);
-        this.log.debug(`current companies: ${companies}`);
-
-        companies = companies.filter(c => !info.factions.includes(c.faction));
-        this.log.debug(`companies without faction membership: ${companies}`);
-
-        companies = companies.filter(c => c.reputation < COMPANY_REP_MAX);
-        this.log.debug(`companies with reputation < ${COMPANY_REP_MAX}: ${companies}`);
-
-        if (companies.length > 0) {
-            companies.sort((a, b) => a.reputation - b.reputation);
-            this.log.debug(`companies sorted by rep: ${companies}`);
-
-            let c = companies[0].name;
-            return new WorkItem('company-' + c, () => {
-                if (this.lastWork && this.lastWork.name == 'company-' + c) {
-                    this.log.debug(`already working for ${c}`);
-                    if (this.ns.applyToCompany(c, 'software')) {
-                        this.log.info(`promoted by ${c}`);
-                    }
-                    this.ns.workForCompany();
-                } else {
-                    this.log.debug(`not currently working for ${c}`);
-                    this.ns.applyToCompany(c, 'software');
-                    if (!this.ns.workForCompany()) {
-                        this.log.error(`rejected by ${c}`);
-                    }
-                }
-            }, true);
-        }
-
-        return null;
-    }
-
-    /** @returns {WorkItem | null} */
-    workCommitCrimes() {
-        if (!this.shouldCommitCrimes()) {
-            return null;
-        }
-
-        let info = this.ns.getCharacterInformation();
-        let stats = this.ns.getStats();
-
-        let gangs = Gang.getAll().filter(g => !info.factions.includes(g.name)).sort((a, b) => a.requiredKarma - b.requiredKarma);
-        this.log.debug(`unjoined gangs: ${gangs}`);
-
-        if (gangs.length > 0) {
-            gangs = gangs.filter(g => g.requiredStats <= Math.min(stats.agility, stats.defense, stats.dexterity, stats.strength));
-            this.log.debug(`gangs with high enough combat stats: ${gangs}`);
-        }
-
-        if (gangs.length > 0) {
-            gangs = gangs.filter(g => g.requiredKarma > this.homicides);
-            this.log.debug(`gangs needing lower karma: ${gangs}`);
-        }
-        
-        for (let gang of gangs) {
-            if (gang.requiredLocation == null || this.cash >= TRAVEL_MIN) {
-                return new WorkItem('crime-homicide', () => {
-                    if (gang.requiredLocation != null) {
-                        this.ensureCity(this.ns.getCharacterInformation(), gang.requiredLocation);
-                    }
-
-                    this.nextTickLength = this.ns.commitCrime('homicide') + 1000;
-                }, false);
-            }
-        }
-
-        return null;
+class WorkItem {
+    /**
+     * @param {string} name
+     * @param {() => void | null} doWork
+     * @param {boolean} isRep
+     */
+    constructor(name, doWork, isRep) {
+        this.name = name;
+        this.doWork = doWork;
+        this.isRep = isRep;
     }
 }

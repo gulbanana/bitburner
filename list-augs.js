@@ -1,13 +1,12 @@
 import * as format from './lib-format.js';
 import { Logger } from './lib-log.js';
-import { Augmentation, FactionWithAugs } from './lib-life-L3.js';
-import { FAVOUR_MAX, Faction } from './lib-life-L2.js';
+import { Augmentation, Faction, favourNeededForDonation } from './lib-life.js';
 
 /** @param {IGame} ns */
 export async function main(ns) {
     let log = new Logger(ns, {});
 
-    let facsByRep = FactionWithAugs.getAll(ns)
+    let facsByRep = Faction.getAll(ns)
         .sort((a, b) => b.reputation - a.reputation);
    
     let info = ns.getCharacterInformation();
@@ -15,7 +14,7 @@ export async function main(ns) {
         facsByRep = facsByRep.filter(f => f.job != null);
     }
 
-    /** @type {{[key: string]: FactionWithAugs}} */
+    /** @type {{[key: string]: Faction}} */
     let facsByName = {};
     for (let f of facsByRep) {
         facsByName[f.name] = f;
@@ -28,12 +27,13 @@ export async function main(ns) {
         .sort((a, b) => b.price - a.price);
 
     ns.tprint('----- LOCKED -----');
+    let favMax = favourNeededForDonation(ns);
     let locked = augsByPrice.filter(a => facsByName[a.faction].reputation < a.requiredReputation);
     for (let aug of groupAugs(locked)) {
         let facs = aug.factions.map(name => {
             let f = facsByName[name];
-            if (f.favor + f.favorGain >= FAVOUR_MAX) {
-                if (f.favor >= FAVOUR_MAX) {
+            if (f.favor + f.favorGain >= favMax) {
+                if (f.favor >= favMax) {
                     return `${name} (donate)`;
                 } else {
                     return `${name} (reset)`;
