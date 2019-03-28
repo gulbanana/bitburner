@@ -140,7 +140,7 @@ export async function main(ns) {
             timeWindow.reset();
         } else {
             let assetChange = assets - lastAssets;
-            let timeChange = time - lastTime;
+            let timeChange = (time - lastTime)/1000;
 
             assetWindow.push(assetChange);
             timeWindow.push(timeChange);
