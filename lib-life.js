@@ -790,7 +790,8 @@ export class Life {
     }
 
     shouldCommitCrimes() {
-        return this.cash >= TRAIN_MIN && this.ns.getCharacterInformation().bitnode == 2;
+        return this.cash >= TRAIN_MIN && 
+               [2, 3].includes(this.ns.getCharacterInformation().bitnode);
     }
 
     // uses home server to weaken DH target
