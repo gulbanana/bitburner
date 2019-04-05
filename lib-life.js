@@ -716,8 +716,8 @@ export class Life {
 
     /** @param {ICharacterInfoMultipliers} mult */
     guessCharismaMult(mult) {
-        // start with SF1-3 and SF2-1
-        let stat = 1.28 * 1.24;
+        // SF1-3, SF2-1, SF3-2
+        let stat = 1.28 * 1.24 * 1.12;
         let statExp = 1.28;
 
         let augs = this.ns.getOwnedAugmentations();        
