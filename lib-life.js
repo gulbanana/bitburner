@@ -327,7 +327,8 @@ export class Life {
         
         if (this.cash >= TRAIN_MIN) {
             let statGoals = {};
-            for (let stat of ['strength', 'defense', 'dexterity', 'agility', 'charisma']) {
+            let statNames = this.shouldCommitCrimes() ? ['strength', 'defense', 'dexterity', 'agility', 'charisma'] : ['charisma'];
+            for (let stat of statNames) {
                 statGoals[stat] = STAT_GOAL_BASE * info.mult[stat]; // * info.mult[stat + 'Exp']; - reciprocal effect only
                 
                 if (stats[stat] < statGoals[stat]) {
