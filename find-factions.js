@@ -74,15 +74,26 @@ export async function main(ns) {
     function findFaction(name, host) {
         let path = '';
         for (let p of find(map[host])) {
-            path = `${path}; connect ${p.name}`;
+            if (path !== '') {
+                path = `${path}; connect ${p.name}`;
+            } else {
+                path = `connect ${p.name}`;
+            }
         }
 
-        log.info(`${name}: ${path}`);
+        if (name === 'Icarus') {
+            log.info(`${name}: ${path}; connect w0r1d_d43m0n; run BruteSSH.exe; run FTPCrack.exe; run relaySMTP.exe; run SQLInject.exe; run HTTPWorm.exe; run NUKE.exe; hack`);
+        } else {
+            log.info(`${name}: ${path}; hack`);
+        }
+        
+        log.info('');
     }
 
     findFaction("CyberSec", "CSEC");
     findFaction("NiteSec", "avmnite-02h");
     findFaction("The Black Hand", "I.I.I.I");
     findFaction("BitRunners", "run4theh111z");
-    findFaction("Daedalus/Icarus", "The-Cave");
+    findFaction("Icarus", "The-Cave");
+    findFaction("Fulcrum", "fulcrumassets");
 }
