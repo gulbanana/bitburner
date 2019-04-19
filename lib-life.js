@@ -31,6 +31,7 @@ export class Life {
         this.beganMS = this.msRunning();
         this.beganDH = this.beganMS || this.dhRunning();
         this.beganFarm = false;
+        this.bitnode = this.ns.getCharacterInformation().bitnode;
 
         // this costs an extra 4.5GB of ram :(
         this.marketAccess = false;
@@ -153,8 +154,10 @@ export class Life {
             } 
         }
 
-        // assume that everyone with enough to buy stock market access has done so
-        if (this.marketAccess && this.cash >= STOCK_MARKET_MIN) {
+        if (this.shouldManageGang()) {
+            await this.ensureRunning('gang.js');
+        }
+        else if (this.marketAccess && this.cash >= STOCK_MARKET_MIN) { // assume that everyone with enough to buy stock market access has done so
             await this.ensureRunning('hft.js');
         }
 
@@ -787,12 +790,12 @@ export class Life {
 
     shouldBuyNodes() {
         // return this.cash <= HACKNET_BUYS_MAX;
-        return this.ns.getCharacterInformation().bitnode != 4;
+        return this.bitnode != 4;
     }
 
     shouldCommitCrimes() {
         return this.cash >= TRAIN_MIN && 
-               [2, 3].includes(this.ns.getCharacterInformation().bitnode);
+               [2, 3].includes(this.bitnode);
     }
 
     // uses home server to weaken DH target
@@ -800,8 +803,12 @@ export class Life {
         return true;
     }
 
+    shouldManageGang() {
+        return this.bitnode == 2;
+    }
+
     spareRamNeeded() {
-        return this.ns.getCharacterInformation().bitnode == 4 ? 64 : 128;
+        return this.bitnode == 4 ? 64 : 128;
     }
 }
 
