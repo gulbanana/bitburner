@@ -44,6 +44,15 @@ export class Life {
         catch (error) { }
         log.debug('market access: ' + this.marketAccess);
 
+        this.hasGang = false;
+        try
+        {
+            let canRecruit = this.ns.gang.canRecruitMember();
+            this.hasGang = true;
+        }
+        catch (error) { }
+        log.debug('has gang: ' + this.hasGang);
+
         /** @type {WorkItem} */
         this.lastWork = null;
 
@@ -804,7 +813,7 @@ export class Life {
     }
 
     shouldManageGang() {
-        return this.bitnode == 2;
+        return this.bitnode == 2 && this.hasGang;
     }
 
     spareRamNeeded() {
